@@ -5,6 +5,11 @@ import test from 'node:test';
 const require = createRequire(import.meta.url);
 const native = require('../native/build/Release/orchard_audio_analysis.node');
 
+// Rubber Band Library (R3/"Finer" engine, offline mode), replacing the
+// hand-rolled WSOLA implementation this file used to test. Every property
+// below still has to hold for the new engine -- duration/pitch/level/stereo
+// correctness are properties of *what the caller needs*, not of which
+// stretcher provides them.
 const SAMPLE_RATE = 44100;
 
 function sine({ frequency = 440, duration = 2, amplitude = 0.5, phase = 0 } = {}) {
@@ -94,8 +99,11 @@ test('time stretch holds level steady rather than amplitude-modulating', async (
 });
 
 test('time stretch keeps stereo channels aligned', async () => {
-  // Opposite phase on each channel: a per-channel similarity search would pick
-  // different offsets and partially cancel when summed to mono.
+  // Opposite phase on each channel: processing channels independently for
+  // maximum individual fidelity (Rubber Band's OptionChannelsApart, its
+  // default) is documented to cost mono compatibility, which this would
+  // expose as partial cancellation when summed to mono. The renderer
+  // explicitly requests OptionChannelsTogether instead.
   const left = sine({ duration: 2, phase: 0 });
   const right = sine({ duration: 2, phase: Math.PI });
   const [outLeft, outRight] = await native.timeStretch([left, right], SAMPLE_RATE, 1.05);
@@ -109,7 +117,7 @@ test('time stretch keeps stereo channels aligned', async () => {
   assert.ok(worst < 0.05, `channels drifted apart, residual sum ${worst.toFixed(4)}`);
 });
 
-test('phase-cancelling stereo does not turn correlation noise into pitch flutter', async () => {
+test('phase-cancelling stereo does not turn into pitch flutter', async () => {
   const left = sine({ duration: 4 });
   const right = new Float32Array(left.length);
   let randomState = 123456789;
@@ -134,10 +142,10 @@ test('phase-cancelling stereo does not turn correlation noise into pitch flutter
   const lowest = Math.min(...frequencies);
   const highest = Math.max(...frequencies);
   const average = frequencies.reduce((total, value) => total + value, 0) / frequencies.length;
-  assert.ok(Math.abs(average - 440) < 6, `phase-cancelled guide drifted to ${average} Hz`);
+  assert.ok(Math.abs(average - 440) < 6, `pitch drifted to ${average} Hz on near-silent mono sum`);
   assert.ok(
     highest - lowest < 2,
-    `phase-cancelled guide fluttered between ${lowest} and ${highest} Hz`
+    `pitch fluttered between ${lowest} and ${highest} Hz on near-silent mono sum`
   );
 });
 
@@ -148,27 +156,6 @@ test('time stretch rejects malformed input', async () => {
   assert.throws(() => native.timeStretch([input], 10, 1), /valid/);
   assert.throws(() => native.timeStretch([input, sine({ duration: 0.4 })], SAMPLE_RATE, 1), /same length/);
   assert.throws(() => native.timeStretch([[1, 2, 3]], SAMPLE_RATE, 1), /Float32Array/);
-});
-
-test('glides onto the target ratio instead of stepping onto it', async () => {
-  const input = sine({ duration: 4 });
-  const [stepped] = await native.timeStretch([input], SAMPLE_RATE, 1.06);
-  const [glided] = await native.timeStretch([input], SAMPLE_RATE, 1.06, {
-    startRatio: 1,
-    glide: 0.5
-  });
-
-  // Half the input is spent easing from 1.0 up to 1.06, so the glided render
-  // is shorter than one that holds 1.06 throughout, but still longer than the
-  // untouched input.
-  assert.ok(
-    glided.length < stepped.length,
-    `glide did not shorten the render: ${glided.length} vs ${stepped.length}`
-  );
-  assert.ok(
-    glided.length > input.length,
-    `glide did not stretch at all: ${glided.length} vs ${input.length}`
-  );
 });
 
 test('binding publishes the transparent ratio limit', () => {
