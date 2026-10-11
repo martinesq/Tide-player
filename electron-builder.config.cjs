@@ -131,7 +131,12 @@ module.exports = {
   publish: {
     provider: 'github',
     owner: 'martinesq',
-    repo: 'Tide-player'
+    repo: 'Tide-player',
+    // electron-builder creates GitHub releases as drafts by default, which are
+    // invisible to electron-updater (and to anyone without repo write access).
+    // Friends need the release to be live the moment CI finishes, so publish
+    // straight to a real release instead of leaving it to be clicked through.
+    releaseType: 'release'
   },
   // Beta versions carry a semver prerelease suffix (e.g. 4.0.0-beta.1). electron-builder
   // otherwise infers an update "channel" from that suffix and names manifests beta.yml /
