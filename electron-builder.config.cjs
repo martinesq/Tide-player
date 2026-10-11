@@ -262,6 +262,13 @@ module.exports = {
     // Default NSIS is a silent one-click installer with no folder picker.
     // Let people choose where Tide goes instead.
     oneClick: false,
-    allowToChangeInstallationDirectory: true
+    allowToChangeInstallationDirectory: true,
+    // The .blockmap upload races the installer/latest.yml upload as a separate
+    // scheduleUpload call in electron-builder's PublishManager, and GitHub's
+    // "get or create release" check-then-create isn't safe across that race:
+    // it has created two separate releases for the same tag more than once.
+    // Differential downloads aren't worth that for a small friends-only
+    // distribution, so skip generating the blockmap entirely.
+    differentialPackage: false
   }
 };
