@@ -95,7 +95,7 @@ export function setupGithubAuth({ app, ipcMain, net, safeStorage, shell }) {
   const githubHeaders = (accessToken) => ({
     accept: 'application/vnd.github+json',
     authorization: `Bearer ${accessToken}`,
-    'user-agent': 'OrchardDesktop/1.0',
+    'user-agent': 'TideDesktop/1.0',
     'x-github-api-version': '2022-11-28'
   });
 
@@ -181,7 +181,7 @@ export function setupGithubAuth({ app, ipcMain, net, safeStorage, shell }) {
 
   ipcMain.handle(GITHUB_AUTH.CONNECT, async () => {
     const config = await fetchJson(`${supportEndpoint}/v1/github/config`);
-    if (!config.clientId) throw new Error('GitHub sign-in is not configured for Orchard Support.');
+    if (!config.clientId) throw new Error('GitHub sign-in is not configured for Tide Support.');
     connectionAttempt += 1;
     const attempt = connectionAttempt;
     const device = await fetchJson(`${githubLogin}/device/code`, {

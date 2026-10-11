@@ -890,7 +890,7 @@ export function createSoundCloudService({ app, BrowserWindow, session, fetchImpl
     // certain tracks once progressive/plain-HLS aren't available, so fail with
     // a clear message instead of a cryptic decoder crash.
     if (/encrypted/i.test(chosen.format?.protocol || '')) {
-      throw new Error('This SoundCloud track is DRM-protected and cannot be played in Orchard.');
+      throw new Error('This SoundCloud track is DRM-protected and cannot be played in Tide.');
     }
 
     const protocol = chosen.format?.protocol === 'progressive' ? 'progressive' : 'hls';

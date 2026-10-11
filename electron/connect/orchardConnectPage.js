@@ -23,7 +23,7 @@ export const connectHtml = `<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Orchard Connect</title>
+  <title>Tide Connect</title>
   <link rel="stylesheet" href="/connect/style.css">
 </head>
 <body>
@@ -31,7 +31,7 @@ export const connectHtml = `<!doctype html>
     <section id="pairing" class="pairing">
       <img src="" alt="" id="artwork" class="artwork">
       <div>
-        <h1>Orchard Connect</h1>
+        <h1>Tide Connect</h1>
         <p id="status">Waiting for desktop approval</p>
         <div class="handoff">
           <a id="open-app" class="button-link" href="#">Open app</a>
@@ -43,7 +43,7 @@ export const connectHtml = `<!doctype html>
     <section class="now">
       <div>
         <p id="title" class="track-title">Nothing playing</p>
-        <p id="artist" class="track-artist">Open Orchard on your desktop.</p>
+        <p id="artist" class="track-artist">Open Tide on your desktop.</p>
       </div>
       <button type="button" id="play" class="primary">Play</button>
     </section>
@@ -421,7 +421,7 @@ function renderState(snapshot) {
   const track = snapshot.track || {};
   const playback = snapshot.playback || {};
   els.title.textContent = track.title || 'Nothing playing';
-  els.artist.textContent = track.artist || 'Open Orchard on your desktop.';
+  els.artist.textContent = track.artist || 'Open Tide on your desktop.';
   els.artwork.src = track.artwork || '';
   els.artwork.style.visibility = track.artwork ? 'visible' : 'hidden';
   els.play.textContent = playback.isPlaying ? 'Pause' : 'Play';
@@ -460,7 +460,7 @@ function requestPairing() {
   // Reaching this page without a token means the address was typed or copied
   // without the ?token= part, which is not the same thing as an expired link.
   if (!token && !deviceToken) {
-    els.status.textContent = 'This device is not paired. Scan the QR code in Orchard, or copy the camera link from Settings - it must include the token.';
+    els.status.textContent = 'This device is not paired. Scan the QR code in Tide, or copy the camera link from Settings - it must include the token.';
     return;
   }
 
@@ -473,17 +473,17 @@ function requestPairing() {
       renderState(payload.state || {});
     } else if (payload.status === 'expired') {
       els.status.textContent = token
-        ? 'Pairing link expired. Refresh the QR code in Orchard.'
-        : 'This device is no longer paired. Scan a new QR code in Orchard.';
+        ? 'Pairing link expired. Refresh the QR code in Tide.'
+        : 'This device is no longer paired. Scan a new QR code in Tide.';
     } else if (payload.status === 'pending') {
-      els.status.textContent = 'Approve this device in Orchard.';
+      els.status.textContent = 'Approve this device in Tide.';
     }
   });
 }
 
 socket.on('connect', () => {
   if (state.browserPairing) requestPairing();
-  else els.status.textContent = 'Open Orchard Connect to pair.';
+  else els.status.textContent = 'Open Tide Connect to pair.';
 });
 
 socket.on('connect:approved', ({ deviceToken, state: snapshot }) => {

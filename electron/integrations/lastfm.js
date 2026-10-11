@@ -30,7 +30,7 @@ const { LASTFM } = IPC_CHANNELS;
 
 const defaultWorkerEndpoint = 'https://lastfm.sfg545.dev';
 const sessionFilename = 'lastfm-session.json';
-const lastfmClient = new LastFmNode({ useragent: 'OrchardDesktop/4.0' });
+const lastfmClient = new LastFmNode({ useragent: 'TideDesktop/4.0' });
 
 function cleanText(value, maxLength = 500) {
   return String(value || '').trim().replace(/\s+/g, ' ').slice(0, maxLength);

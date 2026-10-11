@@ -42,8 +42,8 @@ const DEFAULT_UPDATE_URL = 'https://downloads.sfg545.dev/orchard/';
 const DEFAULT_ARTIST_PACK_INDEX_URL = 'https://artist-packs.sfg545.dev/v1/index.json';
 const { UPDATES } = IPC_CHANNELS;
 const ARTIST_PACK_MAX_BYTES = 50 * 1024 * 1024;
-const GITHUB_OWNER = 'sfg5453';
-const GITHUB_REPO = 'orchard';
+const GITHUB_OWNER = 'martinesq';
+const GITHUB_REPO = 'Tide-player';
 const UPDATE_CHANNELS = ['stable', 'beta'];
 const DEFAULT_UPDATE_CHANNEL = 'stable';
 
@@ -108,13 +108,9 @@ async function writeUpdateChannel(channel) {
   await writeFile(updatePreferencesPath(), JSON.stringify({ channel }, null, 2));
 }
 
-function applyUpdateChannel(channel, updateUrl) {
+function applyUpdateChannel(channel) {
   autoUpdater.allowPrerelease = channel === 'beta';
-  autoUpdater.setFeedURL(
-    channel === 'beta'
-      ? { provider: 'github', owner: GITHUB_OWNER, repo: GITHUB_REPO }
-      : { provider: 'generic', url: updateUrl }
-  );
+  autoUpdater.setFeedURL({ provider: 'github', owner: GITHUB_OWNER, repo: GITHUB_REPO });
 }
 
 function contentStorePaths() {
@@ -351,11 +347,11 @@ export function setupOrchardUpdates({ isDev }) {
     const releases = await fetchJson(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases?per_page=20`, {
       headers: {
         accept: 'application/vnd.github+json',
-        'user-agent': `OrchardDesktop/${state.version}`
+        'user-agent': `TideDesktop/${state.version}`
       }
     }, fetchWithNet);
     const manifestUrl = latestBetaManifestUrl(releases);
-    if (!manifestUrl) throw new Error('No Orchard desktop beta release is currently available.');
+    if (!manifestUrl) throw new Error('No Tide desktop beta release is currently available.');
     return manifestUrl;
   }
 
@@ -378,7 +374,7 @@ export function setupOrchardUpdates({ isDev }) {
     if (!managedUpdateAvailable(state.version, manifest.version)) {
       return publish({
         status: 'current',
-        message: 'Orchard is up to date.',
+        message: 'Tide is up to date.',
         availableVersion: manifest.version,
         releaseDate: manifest.releaseDate,
         releaseNotes: manifest.releaseNotes,
@@ -390,8 +386,8 @@ export function setupOrchardUpdates({ isDev }) {
     }
 
     const packageMessage = managedUpdateAsset
-      ? `Orchard ${manifest.version} is available for your ${managedPackage.label}.`
-      : `Orchard ${manifest.version} is available, but no ${managedPackage.arch} ${managedPackage.label} download was published.`;
+      ? `Tide ${manifest.version} is available for your ${managedPackage.label}.`
+      : `Tide ${manifest.version} is available, but no ${managedPackage.arch} ${managedPackage.label} download was published.`;
     return publish({
       status: 'external-available',
       message: packageMessage,
@@ -408,7 +404,7 @@ export function setupOrchardUpdates({ isDev }) {
   let channelReady = updateChecksEnabled
     ? readUpdateChannel().then((channel) => {
       state = { ...state, channel };
-      if (selfUpdateEnabled) applyUpdateChannel(channel, updateUrl);
+      if (selfUpdateEnabled) applyUpdateChannel(channel);
       return channel;
     })
     : Promise.resolve(state.channel);
@@ -433,7 +429,7 @@ export function setupOrchardUpdates({ isDev }) {
 
     await channelReady;
     await writeUpdateChannel(channel);
-    if (selfUpdateEnabled) applyUpdateChannel(channel, updateUrl);
+    if (selfUpdateEnabled) applyUpdateChannel(channel);
     managedUpdateAsset = null;
     downloadedManagedPath = '';
     publish({ channel, downloadAvailable: false, downloadedFile: '' });
@@ -529,8 +525,8 @@ export function setupOrchardUpdates({ isDev }) {
           buttons: ['Download', 'Cancel'],
           defaultId: 0,
           cancelId: 1,
-          title: 'Download Orchard update',
-          message: `Download Orchard ${availableVersion}?`,
+          title: 'Download Tide update',
+          message: `Download Tide ${availableVersion}?`,
           detail: `${asset.name} will be saved to your Downloads folder. ${managedPackage.installHint}`
         };
         const confirmation = parent
@@ -742,11 +738,11 @@ export function setupOrchardUpdates({ isDev }) {
   });
 
   autoUpdater.on('update-available', (info) => {
-    setUpdateInfo('available', info, `Downloading Orchard ${info?.version || 'update'}...`);
+    setUpdateInfo('available', info, `Downloading Tide ${info?.version || 'update'}...`);
   });
 
   autoUpdater.on('update-not-available', (info) => {
-    setUpdateInfo('current', info, 'Orchard is up to date.');
+    setUpdateInfo('current', info, 'Tide is up to date.');
   });
 
   autoUpdater.on('download-progress', (progress) => {
@@ -760,7 +756,7 @@ export function setupOrchardUpdates({ isDev }) {
   });
 
   autoUpdater.on('update-downloaded', (info) => {
-    setUpdateInfo('downloaded', info, `Orchard ${info?.version || 'update'} is ready to install.`);
+    setUpdateInfo('downloaded', info, `Tide ${info?.version || 'update'} is ready to install.`);
   });
 
   autoUpdater.on('error', (error) => {

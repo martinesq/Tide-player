@@ -89,18 +89,18 @@ export function setupDesktopControls({
   function updateTrayMenu() {
     if (!tray) return;
 
-    tray.setToolTip(`Orchard${playbackState.track?.title ? ` - ${trackLine()}` : ''}`);
+    tray.setToolTip(`Tide${playbackState.track?.title ? ` - ${trackLine()}` : ''}`);
     tray.setContextMenu(Menu.buildFromTemplate([
       { label: trackLine(), enabled: false },
       { type: 'separator' },
-      { label: 'Show Orchard', click: showWindow },
+      { label: 'Show Tide', click: showWindow },
       { label: compact ? 'Leave Compact Player' : 'Compact Player', click: () => setCompactMode(!compact) },
       { type: 'separator' },
       { label: playbackState.isPlaying ? 'Pause' : 'Play', click: () => sendCommand('play-pause') },
       { label: 'Previous', enabled: playbackState.canGoPrevious, click: () => sendCommand('previous') },
       { label: 'Next', enabled: playbackState.canGoNext, click: () => sendCommand('next') },
       { type: 'separator' },
-      { label: 'Quit Orchard', click: () => app.quit() }
+      { label: 'Quit Tide', click: () => app.quit() }
     ]));
   }
 
@@ -136,7 +136,7 @@ export function setupDesktopControls({
     tray.on('double-click', showWindow);
     updateTrayMenu();
   } catch (error) {
-    console.warn(`Orchard tray unavailable: ${error.message}`);
+    console.warn(`Tide tray unavailable: ${error.message}`);
   }
 
   registerShortcuts();

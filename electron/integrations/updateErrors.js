@@ -33,7 +33,7 @@ const MISSING_RELEASE_ARTIFACT_PATTERN = /(?:ERR_UPDATER_CHANNEL_FILE_NOT_FOUND|
 const RELEASE_TAG_PATTERN = /releases\/download\/([^/]+)\/(?:latest|beta)[^/]*\.ya?ml/i;
 
 export const STABLE_RELEASE_AVAILABLE_MESSAGE = 'It seems the stable version of your release has released. Switch to the release channel to update.';
-export const UP_TO_DATE_MESSAGE = 'Orchard is up to date.';
+export const UP_TO_DATE_MESSAGE = 'Tide is up to date.';
 
 export function errorText(error) {
   if (!error) return '';
@@ -98,7 +98,7 @@ export function updateErrorMessage(error) {
   if (!text) return 'Update check failed.';
   if (!isProxyUpdateError(text)) return text;
 
-  return `Orchard could not reach the update server through your system proxy (${text}). ` +
+  return `Tide could not reach the update server through your system proxy (${text}). ` +
     'Album art is served the same way and will also be missing. Check your proxy settings, or turn ' +
     'on Settings > Network > "Ignore system proxy".';
 }
