@@ -471,11 +471,16 @@ export function installPlaybackResolve(ctx) {
       });
 
       if (!ctx.activeTrackIsVideo.value && ctx.crossfadeMode.value === 'smart' && !isHlsPlaybackMime(resolved.mimeType)) {
-        void ctx.analyzeCurrentCrossfadeTrack(
-          ctx.activeTrack.value,
-          resolved.streamUrl,
-          ctx.duration.value || ctx.activeTrack.value?.durationSeconds || 0
-        );
+        // Rapid track switching used to kick off a full-track decode for every
+        // track the user passed through; delaying it lets superseded picks get
+        // cancelled via stalePlayRequest before the expensive decode even starts.
+        const trackToAnalyze = ctx.activeTrack.value;
+        const streamToAnalyze = resolved.streamUrl;
+        const durationToAnalyze = ctx.duration.value || ctx.activeTrack.value?.durationSeconds || 0;
+        setTimeout(() => {
+          if (stalePlayRequest()) return;
+          void ctx.analyzeCurrentCrossfadeTrack(trackToAnalyze, streamToAnalyze, durationToAnalyze);
+        }, 1500);
       }
 
       if (usedPreload || ctx.activeTrackIsVideo.value) ctx.clearNextPreload();
@@ -492,6 +497,14 @@ export function installPlaybackResolve(ctx) {
         return;
       }
       if (ctx.isInterruptedPlaybackRequest(error)) return;
+      // retryAudioWithAlternateFormat only fires for itag-based audio, so HLS
+      // tracks (no itag) fell straight to the error message here, with no
+      // auto-retry -- the listener had to press play again, which calls this
+      // same function with refreshStream, and that always fixed it. Do that
+      // retry ourselves once instead of making it manual.
+      if (!options.recoveryAttempt) {
+        return ctx.playTrack(recoveryTrack, { ...options, refreshStream: true, recoveryAttempt: true });
+      }
       ctx.playbackError.value = error.message;
     } finally {
       if (playRequestId === ctx.playTrackRequest) {
