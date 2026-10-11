@@ -121,10 +121,6 @@ export default {
             <q-icon name="podcasts" />
           </button>
           <span class="sidebar-mini__spacer" />
-          <button type="button" class="sidebar-mini__button" :class="{ 'sidebar-mini__button--active': activeView === 'support' }" title="Support" aria-label="Support" @click="selectView('support')">
-            <q-icon name="support_agent" />
-            <span v-if="supportUnreadCount" class="sidebar-mini__count" aria-hidden="true">{{ supportUnreadCount }}</span>
-          </button>
           <button type="button" class="sidebar-mini__button" :class="{ 'sidebar-mini__button--active': activeView === 'settings' }" title="Settings" aria-label="Settings" @click="selectView('settings')">
             <q-icon name="settings" />
           </button>
@@ -257,16 +253,6 @@ export default {
         </div>
 
         <div class="sidebar-group sidebar-group--status">
-          <button
-            type="button"
-            class="nav-link sidebar-support-link"
-            :class="{ 'nav-link--active': activeView === 'support' }"
-            @click="selectView('support')"
-          >
-            <q-icon name="support_agent" />
-            <span>Support</span>
-            <span v-if="supportUnreadCount" class="nav-link__count" :aria-label="`${supportUnreadCount} unread support replies`">{{ supportUnreadCount }}</span>
-          </button>
           <button
             type="button"
             class="nav-link sidebar-settings-link"

@@ -193,7 +193,11 @@ module.exports = {
     'electron/audio/onnxRuntime.js',
     'electron/audio/vocalMaskProcess.js',
     'electron/audio/vocalMaskTracker.js',
-    'electron/audio/modelProcessHost.js'
+    'electron/audio/modelProcessHost.js',
+    // Same reasoning, for the PO-token minter's utility process.
+    'electron/playback/poTokenProcess.js',
+    'electron/playback/youtubePoToken.js',
+    'electron/playback/streamProxy.js'
   ],
   electronFuses: {
     runAsNode: false,

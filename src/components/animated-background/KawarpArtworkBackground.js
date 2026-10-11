@@ -152,5 +152,19 @@ export class KawarpArtworkBackground {
     this.source = '';
     this.renderer?.dispose();
     this.renderer = null;
+    // dispose() frees the individual programs/buffers/textures it tracked,
+    // but the WebGL context itself -- and whatever the driver holds for it
+    // beyond those tracked objects -- is otherwise left for the GPU process
+    // to reclaim in its own time. Explicitly losing the context (getContext
+    // returns the existing one rather than creating a new one) is what
+    // actually prompts Chromium to release that memory now, which matters
+    // here: this runs every time "Immersive backgrounds" is turned off or
+    // the player view unmounts, not just on app shutdown.
+    try {
+      const gl = this.canvas?.getContext('webgl2') || this.canvas?.getContext('webgl');
+      gl?.getExtension('WEBGL_lose_context')?.loseContext();
+    } catch {
+      // Best-effort: a context that is already lost or unavailable is fine.
+    }
   }
 }

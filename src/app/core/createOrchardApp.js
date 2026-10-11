@@ -63,6 +63,7 @@ import { installState } from './state.js';
 import { installSystemMediaActions } from '../platform/systemMediaActions.js';
 import { installSupportActions } from '../platform/supportActions.js';
 import { installUpdateActions } from '../platform/updateActions.js';
+import { installMemoryTrimActions } from '../platform/memoryTrimActions.js';
 import { installNetworkActions } from '../platform/networkActions.js';
 import { installVisualUtils } from '../appearance/visualUtils.js';
 import { installYouTubeHistoryActions } from '../browse/youtubeHistoryActions.js';
@@ -120,6 +121,7 @@ export function createOrchardApp() {
   installMigrationActions(ctx);
   installUpdateActions(ctx);
   installNetworkActions(ctx);
+  installMemoryTrimActions(ctx);
   installChangelogActions(ctx);
   installArtworkService(ctx);
   installMediaHandlers(ctx);

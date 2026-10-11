@@ -80,6 +80,30 @@ test('animated artwork only runs while playback is active', () => {
   assert.equal(startCount, 1);
 });
 
+test('destroying the WebGL background disposes the renderer and loses the GL context', () => {
+  let disposeCount = 0;
+  let loseContextCount = 0;
+  const loseContextExtension = { loseContext() { loseContextCount += 1; } };
+  const gl = { getExtension: (name) => (name === 'WEBGL_lose_context' ? loseContextExtension : null) };
+  const canvas = { getContext: (type) => (type === 'webgl2' ? gl : null) };
+  const background = new KawarpArtworkBackground(canvas);
+  background.renderer = { dispose() { disposeCount += 1; } };
+
+  background.destroy();
+
+  assert.equal(disposeCount, 1, 'the renderer\'s own tracked resources must still be freed');
+  assert.equal(loseContextCount, 1, 'losing the context is what prompts the GPU process to reclaim it now');
+  assert.equal(background.renderer, null);
+  assert.equal(background.destroyed, true);
+});
+
+test('destroying the WebGL background never throws when the canvas has no GL context to lose', () => {
+  const background = new KawarpArtworkBackground({});
+  background.renderer = { dispose() {} };
+
+  assert.doesNotThrow(() => background.destroy());
+});
+
 test('animated artwork reuses one video and releases superseded sources', async () => {
   const listeners = new Map();
   const video = {

@@ -34,6 +34,7 @@ test('development runtime paths stay rooted at the application directory', () =>
   assert.equal(resolved.preloadPath, path.join(appRoot, 'electron/preload/index.cjs'));
   assert.equal(resolved.rendererEntryPath, path.join(appRoot, 'dist/index.html'));
   assert.equal(resolved.nativeModulePath, path.join(appRoot, 'native/build/Release/orchard_audio_analysis.node'));
+  assert.equal(resolved.memoryTrimModulePath, path.join(appRoot, 'native/build/Release/orchard_memory_trim.node'));
 });
 
 test('packaged runtime paths keep native code outside app.asar', () => {
@@ -66,6 +67,7 @@ test('system-Electron runtime paths follow the archive, not the shared runtime',
 
   const unpacked = '/usr/lib/orchard/app.asar.unpacked';
   assert.equal(resolved.nativeModulePath, path.join(unpacked, 'native/build/Release/orchard_audio_analysis.node'));
+  assert.equal(resolved.memoryTrimModulePath, path.join(unpacked, 'native/build/Release/orchard_memory_trim.node'));
   assert.equal(resolved.beatModelPath, path.join(unpacked, 'models/beat-this/beat_this_int8.onnx'));
   assert.equal(resolved.vocalModelPath, path.join(unpacked, 'models/vocal-separation/vocals_umxhq_int8.onnx'));
 

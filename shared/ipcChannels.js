@@ -71,6 +71,11 @@ export const IPC_CHANNELS = Object.freeze({
     SCROBBLE: 'lastfm:scrobble',
     STATUS: 'lastfm:status'
   }),
+  MEMORY_TRIM: Object.freeze({
+    GET_STATE: 'memory-trim:get-state',
+    SET_ENABLED: 'memory-trim:set-enabled',
+    SET_INTERVAL_SECONDS: 'memory-trim:set-interval-seconds'
+  }),
   MIGRATION: Object.freeze({
     DOWNLOAD: 'migration:download',
     GET_STATE: 'migration:get-state',

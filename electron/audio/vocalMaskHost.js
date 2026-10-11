@@ -32,13 +32,14 @@ const ENTRY_PATH = path
   .join(here, 'vocalMaskProcess.js')
   .replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
 
-export function createVocalMaskHost({ modelPath, log, timeoutMs, fork } = {}) {
+export function createVocalMaskHost({ modelPath, log, timeoutMs, idleTimeoutMs, fork } = {}) {
   const host = createModelProcessHost({
     entryPath: ENTRY_PATH,
     serviceName: 'orchard-vocal-mask',
     modelPath,
     log,
     timeoutMs,
+    idleTimeoutMs,
     fork
   });
 
@@ -46,5 +47,10 @@ export function createVocalMaskHost({ modelPath, log, timeoutMs, fork } = {}) {
    * Runs one spectrogram through the model in the utility process. Resolves
    * to trackVocalMask's verdict, or null whenever the child cannot answer.
    */
-  return { track: host.run, stop: host.stop };
+  async function track(spectrogram) {
+    if (!spectrogram?.frames) return null;
+    return host.run(spectrogram);
+  }
+
+  return { track, stop: host.stop };
 }
