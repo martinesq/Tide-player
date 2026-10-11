@@ -17,6 +17,15 @@
  * along with Orchard. If not, see <https://www.gnu.org/licenses/>.
  */
 
+/* Quasar's own dialog z-index sits below the player bar's elevated layer
+ * (see player-bar.css), so without this the Install button can end up
+ * covered by -- and unclickable behind -- the bottom player bar. Every other
+ * modal-style overlay in this app (song share, spotlight search, etc.)
+ * already elevates itself the same way. */
+.q-dialog:has(.update-dialog) {
+  z-index: 12800 !important;
+}
+
 .update-dialog {
   width: min(620px, calc(100vw - 32px));
   max-height: min(700px, calc(100vh - 48px));

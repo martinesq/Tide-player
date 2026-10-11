@@ -17,6 +17,13 @@
  * along with Orchard. If not, see <https://www.gnu.org/licenses/>.
  */
 
+/* See update-dialog.css: Quasar's dialog z-index sits below the player
+ * bar's elevated layer without this. */
+.q-dialog:has(.playlist-dialog),
+.q-dialog:has(.playlist-delete-dialog) {
+  z-index: 12800 !important;
+}
+
 .playlist-dialog {
   width: min(480px, calc(100vw - 32px));
   max-height: min(680px, calc(100vh - 48px));
