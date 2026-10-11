@@ -30,6 +30,7 @@ export const IPC_CHANNELS = Object.freeze({
     DIAGNOSTICS: 'app:diagnostics',
     FINISH_WELCOME: 'app:finish-welcome',
     GRAPHICS_MODE: 'app:graphics-mode',
+    LAUNCH_PREFERENCES: 'app:launch-preferences',
     RESTART: 'app:restart',
     SHOW_WELCOME: 'app:show-welcome',
     VIEW_LICENSE: 'app:view-license'

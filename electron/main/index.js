@@ -62,6 +62,7 @@ import {
 import { createMusicBrowse, musicBrowseRequest, musicBrowseRequests } from '../catalog/musicBrowse.js';
 import { createPersonalizedRadio } from '../catalog/personalizedRadio.js';
 import { createSearchUtils } from '../catalog/searchUtils.js';
+import { createSoundCloudService } from '../soundcloud/soundcloudService.js';
 import { createSubscribedArtistsService } from '../catalog/subscribedArtists.js';
 import { createYouTubeHistoryService } from '../catalog/youtubeHistory.js';
 import { createYouTubeLikesService } from '../catalog/youtubeLikes.js';
@@ -79,6 +80,7 @@ import { setupSystemMediaHandlers } from '../platform/systemMedia.js';
 import { setWelcomeCompleted, welcomeRequiredAtLaunch } from '../platform/welcomeState.js';
 import { configureWindowOpenHandler, registerDevToolsShortcut, registerWindowControls } from '../platform/windowControls.js';
 import { createGraphicsModeController, GRAPHICS_MODE_FILENAME } from './graphicsMode.js';
+import { createLaunchPreferencesController, LAUNCH_PREFERENCES_FILENAME } from './launchPreferences.js';
 import { createSessionStateStore, SESSION_STATE_FILENAME } from './sessionState.js';
 import { IPC_CHANNELS } from '../../shared/ipcChannels.js';
 import { resolveRuntimePaths } from './runtimePaths.js';
@@ -99,6 +101,10 @@ const runtimePaths = resolveRuntimePaths({ app, isDev });
 const graphicsMode = createGraphicsModeController({
   app,
   filePath: path.join(app.getPath('userData'), GRAPHICS_MODE_FILENAME)
+});
+const launchPreferences = createLaunchPreferencesController({
+  app,
+  filePath: path.join(app.getPath('userData'), LAUNCH_PREFERENCES_FILENAME)
 });
 const sessionState = createSessionStateStore({
   filePath: path.join(app.getPath('userData'), SESSION_STATE_FILENAME)
@@ -121,6 +127,11 @@ let welcomeCompleted = false;
 // Distinguishes "user closed the window" (which may mean hide-to-tray) from a
 // real quit, where the close must be allowed through.
 let quitting = false;
+// Set once at launch when "Start in tray" is on. Kept true for the rest of the
+// session so every later showMainWindow() call (including the renderer's own
+// app:finish-welcome ping on mount) stays a no-op until the user reveals the
+// window from the tray themselves.
+let startedHiddenInTray = false;
 
 const { appIconPath } = runtimePaths;
 const useNativeTitlebar = false;
@@ -154,6 +165,13 @@ const {
   startAccountSwitch,
   startBrowserSignIn
 } = authService;
+const soundcloud = createSoundCloudService({
+  app,
+  BrowserWindow,
+  session,
+  fetchImpl: (url, options) => net.fetch(url, options),
+  getMainWindow: () => mainWindow
+});
 const youtubeLikes = createYouTubeLikesService({ ensureSignedIn, refreshBrowserAuth, getBrowserInnertube });
 const resolveLyrics = createLyricsResolver({ musicClientForBrowse });
 const browserMusicApi = createBrowserMusicApi({
@@ -378,6 +396,7 @@ async function startBridge() {
     startBrowserSignIn,
     subscribedArtists,
     setArtistSubscription,
+    soundcloud,
     youtubeHistory,
     youtubeLikes,
     connectDevicesPath: path.join(app.getPath('userData'), 'orchard-connect-devices.json')
@@ -398,8 +417,15 @@ function showMainWindow() {
   welcomeCompleted = true;
   if (!mainWindow || mainWindow.isDestroyed()) return;
 
-  if (!mainWindow.isVisible()) mainWindow.show();
-  mainWindow.focus();
+  // "Start in tray" keeps the window hidden for the whole launch, not just the
+  // first reveal attempt: the renderer pings app:finish-welcome again once it
+  // mounts, and that must stay a no-op too. The tray's own "Show Orchard" /
+  // double-click handler (desktopControls.js) is a separate code path and is
+  // never gated by this.
+  if (!startedHiddenInTray) {
+    if (!mainWindow.isVisible()) mainWindow.show();
+    mainWindow.focus();
+  }
   if (welcomeWindow && !welcomeWindow.isDestroyed()) welcomeWindow.close();
 }
 
@@ -452,6 +478,11 @@ async function createMainWindow() {
   // Niri is authoritative for tiled geometry. electron-window-state restoring or
   // recording bounds fights the compositor and produces visible edge oscillation.
   if (!isNiriSession) windowState.manage(mainWindow);
+  // manage() calls win.maximize() synchronously when the saved state was
+  // maximized, and on Windows that forces a show:false window onto the screen
+  // regardless of the show option. Undo that now, before any content has
+  // loaded, so a "start in tray" launch never flashes the window.
+  if (launchPreferences.get().startInTray) mainWindow.hide();
   configureWindowOpenHandler(mainWindow, shell);
   if (allowDevTools) registerDevToolsShortcut(mainWindow);
   desktopControls ||= setupDesktopControls({
@@ -513,11 +544,11 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
   session.defaultSession.setPermissionCheckHandler((webContents, permission) =>
     webContents === mainWindow?.webContents &&
-    (permission === 'geolocation' || permission === 'speaker-selection')
+    (permission === 'geolocation' || permission === 'speaker-selection' || permission === 'local-fonts')
   );
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
     callback(webContents === mainWindow?.webContents &&
-      (permission === 'geolocation' || permission === 'speaker-selection'));
+      (permission === 'geolocation' || permission === 'speaker-selection' || permission === 'local-fonts'));
   });
   registerWindowControls({ BrowserWindow, ipcMain, screen });
   registerClipboardHandlers({ clipboard, ipcMain });
@@ -525,6 +556,23 @@ app.whenReady().then(async () => {
   // its first image; applying it later would leave the opening screen's artwork
   // going out through the proxy the listener asked Orchard to ignore.
   await registerNetworkPreferences({ app, ipcMain, session }).restore();
+  // Innertube sessions (player fetch + session/PO-token generation) are created
+  // lazily on first use, which otherwise means the very first "play" after
+  // launch pays that cold-start cost and can exceed the renderer's music:track
+  // timeout, surfacing as "music:track request timed out". Kick them off here,
+  // in parallel with the rest of startup, so they're warm by the time the user
+  // presses play.
+  getGuestInnertube().catch(() => {});
+  getInnertube().catch(() => {});
+  // Same cold-start cost for the YouTube PO token minter (JSDOM VM bootstrap
+  // plus the BotGuard/integrity round trips): it was previously built lazily
+  // on the very first play, right when the renderer's music:track timeout has
+  // the least slack to spare.
+  playbackService.warmPoToken();
+  // Same cold-start problem for SoundCloud: the first track needs a client_id
+  // scraped from soundcloud.com's homepage/JS bundles before playback can
+  // resolve. Only worth warming when the user actually has SoundCloud enabled.
+  if (soundcloud.getMode() !== 'ytm') soundcloud.ensureClientId().catch(() => {});
   // Synchronous on purpose: the renderer seeds the queue and the last page from
   // this while it builds its initial state, and an async read would mean
   // starting on an empty queue and rewriting it a tick later.
@@ -542,6 +590,7 @@ app.whenReady().then(async () => {
     isDev,
     licensePath: runtimePaths.licensePath,
     graphicsMode,
+    launchPreferences,
     getMainWindow: () => mainWindow,
     resolveDiscordSongLink,
     resolveDiscordSongLinkDetails,
@@ -573,7 +622,13 @@ app.whenReady().then(async () => {
   await createMainWindow();
   const needsWelcome = await welcomeRequiredAtLaunch(mainWindow, sessionState);
   if (needsWelcome) await showWelcomeWindow();
-  else showMainWindow();
+  else {
+    // The renderer pings app:finish-welcome on every mount once signed in, not
+    // just at the end of onboarding, so showMainWindow() itself -- not this one
+    // call site -- has to keep the window hidden for a tray-start launch.
+    startedHiddenInTray = launchPreferences.get().startInTray;
+    showMainWindow();
+  }
   setTimeout(() => {
     updates.checkForUpdates();
   }, 3000);
@@ -583,7 +638,13 @@ app.whenReady().then(async () => {
       createMainWindow().then(async () => {
         const needsWelcome = await welcomeRequiredAtLaunch(mainWindow, sessionState);
         if (needsWelcome) await showWelcomeWindow();
-        else showMainWindow();
+        else {
+          // 'activate' with no windows left is an explicit request to see the
+          // app again; it should never stay tray-hidden just because the
+          // original launch was.
+          startedHiddenInTray = false;
+          showMainWindow();
+        }
       });
     }
   });

@@ -26,6 +26,22 @@ const androidVrUserAgents = new Map([
 ]);
 const playbackProbeRanges = ['bytes=0-0'];
 const safariHlsUserAgentPattern = /Version\/15\.5 Safari\/605\.1\.15/i;
+const defaultFetchTimeoutMs = 12_000;
+
+// A stalled connect/response (no error, no data) on any of these requests
+// would otherwise hang the whole music:track resolution until the renderer's
+// own timeout fires, surfacing as "Buffering..." followed by a red
+// "request timed out" error. The timer is cleared as soon as fetch() settles,
+// so an in-progress body download is never aborted by it.
+export async function fetchWithTimeout(url, options = {}, timeoutMs = defaultFetchTimeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 export function isYouTubeMediaUrl(value) {
   try {
@@ -193,7 +209,7 @@ export function upstreamStreamRequest(url, { fallbackUserAgent, rangeHeader } = 
 
 export async function validateUpstreamStreamUrl(url, {
   fallbackUserAgent,
-  fetchImpl = fetch
+  fetchImpl = fetchWithTimeout
 } = {}) {
   let sawReadableProbe = false;
 

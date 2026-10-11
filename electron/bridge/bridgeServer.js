@@ -17,7 +17,11 @@
  * along with Orchard. If not, see <https://www.gnu.org/licenses/>.
  */
 
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { createServer } from 'node:http';
+import { execFile } from 'node:child_process';
 import { Server } from 'socket.io';
 import { createPlaylistMutations } from './playlistMutations.js';
 import { normalizePodcastDetail, normalizePodcastFeed } from '../catalog/podcastCatalog.js';
@@ -34,6 +38,31 @@ import {
   shouldPreferBrowserPlayback,
   shouldTryAuthenticatedAgeGate
 } from '../playback/playbackRouting.js';
+let fontFamiliesPromise = null;
+
+/** Installed font families (Windows), read once and cached. */
+function systemFontFamilies() {
+  fontFamiliesPromise ||= new Promise((resolve) => {
+    if (process.platform !== 'win32') return resolve([]);
+    const script = '[Console]::OutputEncoding=[Text.Encoding]::UTF8;Add-Type -AssemblyName System.Drawing;'
+      + '(New-Object System.Drawing.Text.InstalledFontCollection).Families | ForEach-Object { $_.Name } | ConvertTo-Json -Compress';
+    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { timeout: 15000, windowsHide: true, maxBuffer: 4 * 1024 * 1024 }, (error, stdout) => {
+      if (error) {
+        fontFamiliesPromise = null;
+        return resolve([]);
+      }
+      try {
+        const parsed = JSON.parse(stdout.trim());
+        resolve([...new Set(Array.isArray(parsed) ? parsed : [parsed])].filter(Boolean).sort((a, b) => a.localeCompare(b)));
+      } catch {
+        fontFamiliesPromise = null;
+        resolve([]);
+      }
+    });
+  });
+  return fontFamiliesPromise;
+}
+
 /** Starts the renderer-only loopback transport and returns its owned close handle. */
 export async function startBridgeServer({
   bridgeError,
@@ -82,11 +111,12 @@ export async function startBridgeServer({
   startBrowserSignIn,
   subscribedArtists,
   setArtistSubscription,
+  soundcloud,
   youtubeHistory,
   youtubeLikes,
   connectDevicesPath
 }) {
-  const playlistMutations = createPlaylistMutations({ ensureSignedIn, refreshBrowserAuth });
+  const playlistMutations = createPlaylistMutations({ ensureSignedIn, refreshBrowserAuth, soundcloud });
   const streamCorsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Range, Content-Type',
@@ -140,6 +170,71 @@ export async function startBridgeServer({
       return;
     }
 
+    if (requestUrl.pathname.startsWith('/sc-stream/')) {
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204, streamCorsHeaders);
+        res.end();
+        return;
+      }
+      const trackId = decodeURIComponent(requestUrl.pathname.replace('/sc-stream/', ''));
+      try {
+        await soundcloud.proxyStream(trackId, req, res, streamCorsHeaders);
+      } catch (error) {
+        console.warn(`SoundCloud stream failed for ${trackId}: ${error.message}`);
+        if (res.headersSent) {
+          if (!res.writableEnded) res.destroy(error);
+          return;
+        }
+        res.writeHead(502, { ...streamCorsHeaders, 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: error.message }));
+      }
+      return;
+    }
+
+    if (requestUrl.pathname === '/fonts') {
+      const families = await systemFontFamilies();
+      res.writeHead(200, { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, data: families }));
+      return;
+    }
+
+    // Small JSON control surface used by the renderer's source selector.
+    if (requestUrl.pathname.startsWith('/sc/')) {
+      const jsonHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Content-Type': 'application/json'
+      };
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204, jsonHeaders);
+        res.end();
+        return;
+      }
+      try {
+        const action = requestUrl.pathname.replace('/sc/', '');
+        let data;
+        if (action === 'status') data = await soundcloud.status();
+        else if (action === 'login') data = await soundcloud.login();
+        else if (action === 'logout') data = await soundcloud.logout();
+        else if (action === 'mode') {
+          const mode = requestUrl.searchParams.get('set');
+          if (mode) soundcloud.setMode(mode);
+          data = await soundcloud.status();
+        } else {
+          res.writeHead(404, jsonHeaders);
+          res.end(JSON.stringify({ error: 'Unknown action' }));
+          return;
+        }
+        res.writeHead(200, jsonHeaders);
+        res.end(JSON.stringify({ ok: true, data }));
+      } catch (error) {
+        res.writeHead(500, jsonHeaders);
+        res.end(JSON.stringify({ ok: false, error: error.message }));
+      }
+      return;
+    }
+
     res.writeHead(404, streamCorsHeaders);
     res.end();
   });
@@ -180,6 +275,9 @@ export async function startBridgeServer({
   }
 
   async function resolveTrackRequest({ videoId, supportedMimes = [], supportedVideoMimes = [], mediaKind = 'audio', preload = false, refreshStream = false, avoidItags = [], avoidMimeTypes = [], ...trackHint }) {
+    if (soundcloud.isSoundCloudId(videoId)) {
+      return soundcloud.resolveTrack(videoId, `http://127.0.0.1:${httpServer.address().port}/sc-stream`);
+    }
     const preferBrowserPlayback = shouldPreferBrowserPlayback(
       trackHint,
       playback.androidVrCooldownActive()
@@ -215,7 +313,8 @@ export async function startBridgeServer({
             artist: trackHint.artist || trackHint.artists?.[0] || '',
             durationSeconds: Number(trackHint.durationSeconds || 0),
             thumbnail: trackHint.thumbnail || '',
-            isLive: false
+            isLive: false,
+            viewCount: 0
           };
       const fallbackTargetDuration = playAsVideo
         ? Number(trackHint.fallbackTargetDurationSeconds || trackHint.durationSeconds || 0)
@@ -360,9 +459,74 @@ export async function startBridgeServer({
       return release;
     }
   }
+  const soundcloudBrowseId = (payload) => {
+    const id = payload?.browseId || payload?.browsePayload?.browseId || '';
+    return soundcloud.isSoundCloudId(id) ? id : '';
+  };
+
+  /** Folds SoundCloud account state into the YouTube-shaped auth state per source mode. */
+  async function sourceAuthState() {
+    const base = publicAuthState();
+    const mode = soundcloud.getMode();
+    if (mode === 'ytm') return { ...base, source: mode };
+    const sc = await soundcloud.status().catch(() => ({ signedIn: false, user: null }));
+    if (mode === 'sc') {
+      return {
+        signedIn: sc.signedIn,
+        status: sc.signedIn ? 'signed_in' : 'signed_out',
+        pending: null,
+        error: '',
+        user: sc.user,
+        source: mode,
+        soundcloud: sc
+      };
+    }
+    return {
+      ...base,
+      signedIn: Boolean(base.signedIn || sc.signedIn),
+      status: base.signedIn || sc.signedIn ? 'signed_in' : base.status,
+      user: base.signedIn ? base.user : sc.user || base.user,
+      source: mode,
+      soundcloud: sc
+    };
+  }
+
+  function interleave(a = [], b = []) {
+    const out = [];
+    for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+      if (a[i]) out.push(a[i]);
+      if (b[i]) out.push(b[i]);
+    }
+    return out;
+  }
+
+  function mergeSearchResults(primary, secondary) {
+    const order = ['songs', 'videos', 'albums', 'artists', 'playlists'];
+    const byKey = new Map();
+    for (const section of [...(primary?.sections || []), ...(secondary?.sections || [])]) {
+      const existing = byKey.get(section.key);
+      byKey.set(section.key, existing ? { ...existing, items: interleave(existing.items, section.items) } : section);
+    }
+    const sections = [...byKey.values()].sort((x, y) => order.indexOf(x.key) - order.indexOf(y.key));
+    return { ...(primary || secondary), sections };
+  }
+
   ioServer.on('connection', (socket) => {
-    registerYouTubeHistoryBridge({ socket, youtubeHistory });
-    registerYouTubeLikesBridge({ socket, youtubeLikes, bridgeError });
+    registerYouTubeHistoryBridge({
+      socket,
+      youtubeHistory: {
+        start: (payload) => soundcloud.isSoundCloudId(payload?.videoId) ? { recorded: false } : youtubeHistory.start(payload),
+        update: (payload) => youtubeHistory.update(payload)
+      }
+    });
+    registerYouTubeLikesBridge({
+      socket,
+      bridgeError,
+      youtubeLikes: {
+        status: (payload) => soundcloud.isSoundCloudId(payload?.videoId) ? soundcloud.likeStatus(payload.videoId) : youtubeLikes.status(payload),
+        set: (payload) => soundcloud.isSoundCloudId(payload?.videoId) ? soundcloud.setLike(payload.videoId, payload.liked) : youtubeLikes.set(payload)
+      }
+    });
     socket.emit('bridge:ready', { port: httpServer.address().port });
     connectServer.registerDesktop(socket);
     registerCacheBridge({ socket, bridgeError, playback, resolveTrackRequest, normalizeTrackInfo });
@@ -372,12 +536,25 @@ export async function startBridgeServer({
 
     socket.on('music:search', async ({ query, filter = 'songs' }, reply) => {
       try {
-        const yt = await getGuestInnertube();
-        const loadTrackPopularity = async (videoId) => {
-          const info = await yt.getBasicInfo(videoId);
-          return info?.basic_info?.view_count || 0;
+        const mode = soundcloud.getMode();
+        const searchYouTube = async () => {
+          const yt = await getGuestInnertube();
+          const loadTrackPopularity = async (videoId) => {
+            const info = await yt.getBasicInfo(videoId);
+            return info?.basic_info?.view_count || 0;
+          };
+          return searchCatalog(yt.music, query, filter, loadTrackPopularity);
         };
-        reply({ ok: true, data: await searchCatalog(yt.music, query, filter, loadTrackPopularity) });
+
+        if (mode === 'sc') {
+          reply({ ok: true, data: await soundcloud.search(query, filter) });
+        } else if (mode === 'both') {
+          const [youtube, sc] = await Promise.allSettled([searchYouTube(), soundcloud.search(query, filter)]);
+          if (youtube.status === 'rejected' && sc.status === 'rejected') throw youtube.reason;
+          reply({ ok: true, data: mergeSearchResults(youtube.value, sc.value) });
+        } else {
+          reply({ ok: true, data: await searchYouTube() });
+        }
       } catch (error) {
         reply({ ok: false, error: bridgeError(error) });
       }
@@ -429,10 +606,86 @@ export async function startBridgeServer({
       }
     });
 
+    /** Likes = every source YouTube Music exposes (Liked Music playlist, raw library page, library Songs), merged by video id. */
+    async function fetchYouTubeLikes(yt) {
+      const fromPlaylist = async () => {
+        const playlist = await resolveMusicCollectionWithFallback(yt, 'playlist', { browseId: 'VLLM' });
+        const first = normalizePlaylist(playlist);
+        const tracks = [...first.tracks];
+        let continuation = first.continuation;
+        for (let i = 0; continuation && i < 500; i += 1) {
+          const page = normalizePlaylistPage(await continueMusicPlaylistWithFallback(yt, continuation), tracks.length);
+          tracks.push(...page.tracks);
+          continuation = page.continuation;
+        }
+        return tracks;
+      };
+      const fromInnertube = async () => {
+        let page = await yt.music.getPlaylist('VLLM');
+        const tracks = [...(page.items || [])];
+        for (let i = 0; page.has_continuation && i < 500; i += 1) {
+          page = await page.getContinuation();
+          tracks.push(...(page.items || []));
+        }
+        const mapped = tracks.map((t) => ({ id: t.id || t.video_id, title: t.title?.text || t.title || '', type: t.type }));
+        const noId = mapped.filter((t) => !t.id);
+        const ids = mapped.filter((t) => t.id).map((t) => t.id);
+        const dupes = ids.length - new Set(ids).size;
+        try {
+          fs.appendFileSync(path.join(os.tmpdir(), 'orchard-likes.log'),
+            `  innertube raw=${mapped.length} noId=${noId.length} dupIds=${dupes} types=${[...new Set(mapped.map((t) => t.type))].join(',')} total_items=${page.header?.total_items ?? page.total_items ?? '?'} noIdTitles=${JSON.stringify(noId.slice(0, 40).map((t) => t.title))}
+`);
+        } catch { /* best effort */ }
+        return mapped.filter((t) => t.id);
+      };
+      const sources = {
+        playlist: fromPlaylist(),
+        raw: fetchMusicLibraryCategory(yt, 'likes'),
+        songs: fetchMusicLibraryCategory(yt, 'songs'),
+        innertube: fromInnertube()
+      };
+      const names = Object.keys(sources);
+      const results = await Promise.allSettled(Object.values(sources));
+      const seen = new Set();
+      const merged = [];
+      const full = [];
+      results.forEach((r, idx) => {
+        if (r.status !== 'fulfilled') return;
+        for (const item of r.value) {
+          if (!item?.id || seen.has(item.id)) continue;
+          seen.add(item.id);
+          // The innertube list is only a safety net for ids; it lacks the full item shape.
+          (names[idx] === 'innertube' ? full : merged).push(names[idx] === 'innertube' ? item : { ...item, fromLikes: true });
+        }
+      });
+      const summary = names.map((n, idx) => `${n}=${results[idx].status === 'fulfilled' ? results[idx].value.length : 'ERR ' + results[idx].reason?.message}`).join(' ');
+      const line = `[${new Date().toISOString()}] YT likes: ${summary} merged=${merged.length} innertube-only=${full.length}
+`;
+      console.log(line.trim());
+      try { fs.appendFileSync(path.join(os.tmpdir(), 'orchard-likes.log'), line); } catch { /* best effort */ }
+      return merged;
+    }
+
+    async function fetchYouTubeLibrary(yt, title) {
+      return String(title || '').trim().toLowerCase() === 'likes' ? fetchYouTubeLikes(yt) : fetchMusicLibraryCategory(yt, title);
+    }
+
     socket.on('music:library-category', async ({ title }, reply) => {
       try {
+        const mode = soundcloud.getMode();
+        if (mode === 'sc') return reply({ ok: true, data: await soundcloud.libraryCategory(title) });
+        if (mode === 'both') {
+          const [youtube, sc] = await Promise.allSettled([
+            ensureSignedIn().then((yt) => fetchYouTubeLibrary(yt, title)),
+            soundcloud.libraryCategory(title)
+          ]);
+          if (youtube.status === 'rejected' && sc.status === 'rejected') throw youtube.reason;
+          if (youtube.status === 'rejected') console.warn(`YT library ${title} failed: ${youtube.reason?.message}`);
+          if (sc.status === 'rejected') console.warn(`SC library ${title} failed: ${sc.reason?.message}`);
+          return reply({ ok: true, data: [...(youtube.value || []), ...(sc.value || [])] });
+        }
         const yt = await ensureSignedIn();
-        reply({ ok: true, data: await fetchMusicLibraryCategory(yt, title) });
+        reply({ ok: true, data: await fetchYouTubeLibrary(yt, title) });
       } catch (error) {
         reply({ ok: false, error: bridgeError(error) });
       }
@@ -440,6 +693,16 @@ export async function startBridgeServer({
 
     socket.on('music:subscribed-artists', async (_payload, reply) => {
       try {
+        const mode = soundcloud.getMode();
+        if (mode === 'sc') return reply({ ok: true, data: await soundcloud.libraryCategory('artists') });
+        if (mode === 'both') {
+          const [youtube, sc] = await Promise.allSettled([
+            refreshBrowserAuth().then(() => subscribedArtists()),
+            soundcloud.libraryCategory('artists')
+          ]);
+          if (youtube.status === 'rejected' && sc.status === 'rejected') throw youtube.reason;
+          return reply({ ok: true, data: [...(youtube.value || []), ...(sc.value || [])] });
+        }
         await refreshBrowserAuth();
         reply({ ok: true, data: await subscribedArtists() });
       } catch (error) {
@@ -462,15 +725,18 @@ export async function startBridgeServer({
         await refreshBrowserAuth();
         const yt = await getInnertube();
         await restoreCachedSignIn(yt);
-        reply({ ok: true, data: publicAuthState() });
       } catch {
-        reply({ ok: true, data: publicAuthState() });
+        // fall through to the state we already have
       }
+      reply({ ok: true, data: await sourceAuthState() });
     });
 
     socket.on('auth:login', async (_payload, reply) => {
       try {
-        reply({ ok: true, data: await startLogin({ startBrowserSignIn, publicAuthState }) });
+        const mode = soundcloud.getMode();
+        if (mode === 'sc' || (mode === 'both' && publicAuthState().signedIn)) await soundcloud.login();
+        else await startLogin({ startBrowserSignIn, publicAuthState });
+        reply({ ok: true, data: await sourceAuthState() });
       } catch (error) {
         reply({ ok: false, error: bridgeError(error) });
       }
@@ -478,7 +744,9 @@ export async function startBridgeServer({
 
     socket.on('auth:logout', async (_payload, reply) => {
       try {
-        reply({ ok: true, data: await signOutAuth() });
+        if (soundcloud.getMode() === 'sc') await soundcloud.logout();
+        else await signOutAuth();
+        reply({ ok: true, data: await sourceAuthState() });
       } catch (error) {
         reply({ ok: false, error: bridgeError(error) });
       }
@@ -494,21 +762,35 @@ export async function startBridgeServer({
 
     socket.on('music:home', async (_payload, reply) => {
       try {
-        if (!hasBrowserLoginCookie()) await refreshBrowserAuth();
-        const yt = await ensureSignedIn();
-        const [home, library] = await Promise.all([
-          fetchFeed('Music home', () => fetchMusicHomeFeed(yt), hasBrowserLoginCookie() ? fetchBrowserMusicHome : null),
-          fetchMusicLibraryFeed(yt)
-        ]);
-        const errors = [home.error, library.error].filter(Boolean);
+        const mode = soundcloud.getMode();
+        const loadYouTubeHome = async () => {
+          if (!hasBrowserLoginCookie()) await refreshBrowserAuth();
+          const yt = await ensureSignedIn();
+          const [home, library] = await Promise.all([
+            fetchFeed('Music home', () => fetchMusicHomeFeed(yt), hasBrowserLoginCookie() ? fetchBrowserMusicHome : null),
+            fetchMusicLibraryFeed(yt)
+          ]);
+          return { home: home.feed, library: library.feed, warnings: [home.error, library.error].filter(Boolean) };
+        };
+        const empty = () => ({ home: { sections: [], filters: [] }, library: { sections: [], filters: [] }, warnings: [] });
+
+        const youtube = mode === 'sc'
+          ? empty()
+          : mode === 'both'
+            ? await loadYouTubeHome().catch(empty)
+            : await loadYouTubeHome();
+        const sc = mode === 'ytm' ? null : await soundcloud.feed().catch((error) => {
+          youtube.warnings.push(`SoundCloud: ${bridgeError(error)}`);
+          return null;
+        });
 
         reply({
           ok: true,
           data: {
-            home: home.feed,
-            library: library.feed,
-            auth: publicAuthState(),
-            warnings: errors
+            home: sc ? { ...youtube.home, sections: [...(youtube.home.sections || []), ...sc.home.sections] } : youtube.home,
+            library: sc ? { ...youtube.library, sections: [...(youtube.library.sections || []), ...sc.library.sections] } : youtube.library,
+            auth: await sourceAuthState(),
+            warnings: youtube.warnings
           }
         });
       } catch (error) {
@@ -518,6 +800,8 @@ export async function startBridgeServer({
 
     socket.on('music:playlist', async (payload, reply) => {
       try {
+        const scId = soundcloudBrowseId(payload);
+        if (scId) return reply({ ok: true, data: { ...await soundcloud.playlist(scId), editable: false } });
         const yt = await musicClientForBrowse();
         const [playlist, youtubePlaylist] = await Promise.all([
           resolveMusicCollectionWithFallback(yt, 'playlist', payload),
@@ -550,6 +834,8 @@ export async function startBridgeServer({
 
     socket.on('music:album', async (payload, reply) => {
       try {
+        const scId = soundcloudBrowseId(payload);
+        if (scId) return reply({ ok: true, data: await soundcloud.playlist(scId) });
         const yt = await musicClientForBrowse();
         const album = await resolveMusicCollectionWithFallback(yt, 'album', payload);
         reply({ ok: true, data: normalizeAlbum(album.data, album.browseId) });
@@ -576,6 +862,8 @@ export async function startBridgeServer({
 
     socket.on('music:artist', async (payload, reply) => {
       try {
+        const scId = soundcloudBrowseId(payload);
+        if (scId) return reply({ ok: true, data: await soundcloud.artist(scId) });
         const payloadCached = cachedArtistResult(payload, { hydratedOnly: true });
         if (payloadCached) return reply({ ok: true, data: payloadCached });
         const yt = await musicClientForBrowse();
@@ -586,6 +874,7 @@ export async function startBridgeServer({
     });
     socket.on('music:artist:section', async (payload, reply) => {
       try {
+        if (soundcloudBrowseId(payload)) return reply({ ok: true, data: { ...(payload?.section || {}), items: payload?.section?.items || [] } });
         reply({ ok: true, data: await normalizeArtistSection(await resolveMusicCollectionWithFallback(await musicClientForBrowse(), 'artist', payload), payload?.section) });
       } catch (error) { reply({ ok: false, error: bridgeError(error) }); }
     });
@@ -622,6 +911,7 @@ export async function startBridgeServer({
 
     socket.on('music:up-next', async ({ videoId }, reply) => {
       try {
+        if (soundcloud.isSoundCloudId(videoId)) return reply({ ok: true, data: await soundcloud.related(videoId) });
         const upNext = await musicUpNext(videoId);
         reply({
           ok: true,

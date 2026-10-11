@@ -71,7 +71,9 @@ function findPlaylistSetVideoId(value, videoId, seen = new Set(), depth = 0) {
 }
 
 // Registers authenticated playlist mutations while keeping credentials in the main process.
-export function createPlaylistMutations({ ensureSignedIn, refreshBrowserAuth }) {
+export function createPlaylistMutations({ ensureSignedIn, refreshBrowserAuth, soundcloud }) {
+  const isSoundCloud = (value) => Boolean(soundcloud?.isSoundCloudId(String(value || '')));
+
   async function signedInClient() {
     await refreshBrowserAuth();
     return ensureSignedIn();
@@ -124,9 +126,11 @@ export function createPlaylistMutations({ ensureSignedIn, refreshBrowserAuth }) 
   }
 
   async function editableTargets({ playlists = [], videoId = '' } = {}) {
+    if (isSoundCloud(videoId)) return soundcloud.editablePlaylists(videoId);
+
     const yt = await signedInClient();
     const candidates = new Map(playlists
-      .filter((item) => playlistId(item?.id))
+      .filter((item) => playlistId(item?.id) && !isSoundCloud(item.id))
       .slice(0, 40)
       .map((item) => [playlistId(item.id), { ...item, id: playlistId(item.id) }]));
     let options = [];
@@ -165,6 +169,7 @@ export function createPlaylistMutations({ ensureSignedIn, refreshBrowserAuth }) 
     const cleanVideoId = String(videoId || '').trim();
     if (!cleanTitle) throw new Error('Enter a playlist name.');
     if (!cleanVideoId) throw new Error('This track cannot be added to a playlist.');
+    if (isSoundCloud(cleanVideoId)) return soundcloud.createPlaylist(cleanTitle, cleanVideoId);
 
     const yt = await signedInClient();
     try {
@@ -180,6 +185,9 @@ export function createPlaylistMutations({ ensureSignedIn, refreshBrowserAuth }) 
     const id = playlistId(targetId);
     const cleanVideoId = String(videoId || '').trim();
     if (!id || !cleanVideoId) throw new Error('Playlist or track information is missing.');
+    if (isSoundCloud(targetId) || isSoundCloud(cleanVideoId)) {
+      return soundcloud.addToPlaylist(targetId, cleanVideoId);
+    }
 
     const yt = await signedInClient();
     try {
@@ -199,6 +207,7 @@ export function createPlaylistMutations({ ensureSignedIn, refreshBrowserAuth }) 
     const id = playlistId(targetId);
     const cleanVideoId = String(videoId || '').trim();
     if (!id || !cleanVideoId) throw new Error('Playlist or track information is missing.');
+    if (isSoundCloud(targetId)) throw new Error('Removing tracks from SoundCloud playlists is not supported yet.');
 
     const yt = await signedInClient();
     try {
@@ -226,6 +235,7 @@ export function createPlaylistMutations({ ensureSignedIn, refreshBrowserAuth }) 
   async function deletePlaylist({ playlistId: targetId, videoId = '' }) {
     const id = playlistId(targetId);
     if (!id) throw new Error('Playlist information is missing.');
+    if (isSoundCloud(targetId)) throw new Error('Deleting SoundCloud playlists is not supported yet.');
 
     const yt = await signedInClient();
     let editable = await canEditWithClient(yt, id);

@@ -141,8 +141,26 @@ export function createMainFeeds({
   }
 
   async function fetchMusicLibraryCategory(yt, title) {
+    if (title.trim().toLowerCase() !== 'likes') return fetchLibraryCategoryOnce(yt, title);
+    // Likes = the "Liked Music" list plus the library's Songs tab, so nothing is lost if one source pages short.
+    const results = await Promise.allSettled([
+      fetchLibraryCategoryOnce(yt, 'likes'),
+      fetchLibraryCategoryOnce(yt, 'songs')
+    ]);
+    if (results.every((r) => r.status === 'rejected')) throw results[0].reason;
+    const seen = new Set();
+    const merged = results.flatMap((r) => (r.status === 'fulfilled' ? r.value : [])).filter((item) => {
+      if (!item.id || seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+    console.log(`YT likes: ${results.map((r) => (r.status === 'fulfilled' ? r.value.length : 'failed')).join(' + ')} -> ${merged.length}`);
+    return merged;
+  }
+
+  async function fetchLibraryCategoryOnce(yt, title) {
     const normalizedTitle = title.trim().toLowerCase();
-    const directBrowseId = normalizedTitle === 'playlists' ? 'FEmusic_liked_playlists' : '';
+    const directBrowseId = normalizedTitle === 'playlists' ? 'FEmusic_liked_playlists' : normalizedTitle === 'likes' ? 'VLLM' : '';
     const landing = directBrowseId
       ? null
       : await fetchRawLibraryPage(yt, { browseId: 'FEmusic_library_landing' });
@@ -155,7 +173,7 @@ export function createMainFeeds({
     let request = filterRequest;
     let pageCount = 0;
 
-    while (request && pageCount < 20) {
+    while (request && pageCount < 500) {
       const page = await fetchRawLibraryPage(yt, request);
       items.push(...normalizedRawLibraryItems(page));
       pageCount += 1;
@@ -163,7 +181,7 @@ export function createMainFeeds({
       request = continuation ? { continuation } : null;
     }
 
-    const categoryItems = normalizedTitle === 'songs'
+    const categoryItems = normalizedTitle === 'songs' || normalizedTitle === 'likes'
       ? items.filter((item) => item.id)
       : items;
     const seen = new Set();
