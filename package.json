@@ -1,6 +1,6 @@
 {
   "name": "tide",
-  "version": "4.7.5",
+  "version": "4.7.6",
   "description": "A Quasar, Vue, Socket.IO, Electron YouTube Music client backed by InnerTube. Tide is an independent fork of Orchard (https://github.com/sfg5453/orchard).",
   "homepage": "https://github.com/martinesq/Tide-player",
   "repository": {
