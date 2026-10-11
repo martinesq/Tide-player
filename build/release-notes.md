@@ -1,5 +1,8 @@
-## Orchard 4.7.3 "Liminal Refrain"
+## Tide 4.7.4
 
-### New & improved
-- **Managed Linux Updates**: Arch Linux, Debian, RPM, and Flatpak installations now receive stable and beta release notifications even when Orchard cannot install the update itself.
-- **Download the Right Package**: Orchard can ask before downloading the exact package for the listener's installation to Downloads, verifies it against the release checksum, and can reveal the saved file when it is ready.
+### Changed
+- The Windows installer now lets you pick an install folder instead of silently installing to a fixed path.
+- Removed the leftover "Orchard Tauri" migration notice, which doesn't apply to Tide and pinged SFG545's servers on every launch for a banner nothing ever displayed.
+- Fixed a couple of leftover Orchard links (bug report, About dialog) to point at this repo.
+
+Tide is an independent fork of [Orchard](https://github.com/sfg5453/orchard) by SFG545.
