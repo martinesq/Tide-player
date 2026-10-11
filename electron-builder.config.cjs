@@ -257,5 +257,11 @@ module.exports = {
     // recorded in latest.yml and breaks electron-updater downloads (404). R2 never
     // rewrites uploaded filenames, so this only surfaced for GitHub-published beta builds.
     artifactName: '${productName}-Setup-${version}.${ext}'
+  },
+  nsis: {
+    // Default NSIS is a silent one-click installer with no folder picker.
+    // Let people choose where Tide goes instead.
+    oneClick: false,
+    allowToChangeInstallationLocation: true
   }
 };

@@ -114,10 +114,10 @@ export default {
         />
         <a
           class="about-dialog__website"
-          href="https://sfg545.dev/orchard"
+          href="https://github.com/martinesq/Tide-player"
           target="_blank"
           rel="noopener noreferrer"
-        >sfg545.dev/orchard</a>
+        >github.com/martinesq/Tide-player</a>
       </div>
     </q-card>
   </q-dialog>
