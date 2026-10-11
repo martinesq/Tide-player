@@ -66,7 +66,6 @@ import { createSoundCloudService } from '../soundcloud/soundcloudService.js';
 import { createSubscribedArtistsService } from '../catalog/subscribedArtists.js';
 import { createYouTubeHistoryService } from '../catalog/youtubeHistory.js';
 import { createYouTubeLikesService } from '../catalog/youtubeLikes.js';
-import { setupMigrationNotice } from '../integrations/migrationNotice.js';
 import { setupOrchardUpdates } from '../integrations/updater.js';
 import { createPreferredAudioTrack, createTrackInfoNormalizer } from '../playback/playbackFormats.js';
 import { createMusicVideoFallback } from '../playback/musicVideoFallback.js';
@@ -609,11 +608,6 @@ app.whenReady().then(async () => {
   });
   registerScreenshotCapture({ BrowserWindow, ipcMain });
   systemMedia = setupSystemMediaHandlers({ ipcMain, app, getWindow: () => mainWindow });
-  setupMigrationNotice({
-    ipcMain,
-    shell,
-    fetchImpl: (url, options) => net.fetch(url, options)
-  });
   setupGithubAuth({ app, ipcMain, net, safeStorage, shell });
   setupLastfm({ app, ipcMain, net, safeStorage, shell });
   setupSpotify({ app, ipcMain, net, safeStorage });
