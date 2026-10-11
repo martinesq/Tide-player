@@ -1,4 +1,8 @@
-## Tide 4.7.8
+## Tide 4.7.9
+
+### Fixed
+- Restored the search bar, navigation arrows, and appearance/color customization that were missing from 4.7.8 -- that build was recompiled from the current source tree, which still lags behind what 4.7.7 actually shipped in a few places. This release is built on 4.7.7's own frontend again, with only the additions below layered on top; nothing from 4.7.7 was removed.
+- Some YouTube Music tracks resolve to a music video rather than a plain audio stream, and used to open full-screen the instant they started playing, with no setting to stop it. Playback now always starts with just the bottom bar; use the expand button if you want the video full-screen.
 
 ### Performance
 - The beat-tracking and vocal-separation ONNX models now run in a utility process that retires itself after 2 minutes of inactivity, instead of staying loaded for the whole session.
@@ -6,9 +10,9 @@
 - The audio-output device menu no longer starts Chromium's video-capture service (~100 MB) on every launch; it now loads only when that menu is actually opened.
 - The animated background's WebGL context is now explicitly released when turned off or navigated away from, instead of waiting on the browser to notice.
 - New, off-by-default "Trim memory usage" option in Settings → Performance: periodically asks Windows to release each of Tide's own processes' idle memory, on an interval you set (1–600 seconds). This does not reduce how much memory Tide actually needs; it only affects what Task Manager reports while nothing is using that memory. Scoped entirely to Tide's own processes.
-
-### Fixed
 - The now-playing title marquee (and other ambient animations in the player bar) would silently stop as soon as the window lost focus, because Chromium throttles animations for unfocused windows by default. Since Tide is commonly used in the background while playing music, this is now disabled for the main window.
+
+### Changed
 - Removed the "Support" entry from the sidebar, above Settings.
 
 Tide is an independent fork of [Orchard](https://github.com/sfg5453/orchard) by SFG545.
