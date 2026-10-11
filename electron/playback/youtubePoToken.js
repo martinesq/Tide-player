@@ -19,6 +19,8 @@
 
 // YouTube's WebPO minter is reusable, while each GVS token is bound to one
 // video ID. Keep both layers lazy so startup and catalog requests pay nothing.
+import { fetchWithTimeout } from './streamProxy.js';
+
 const requestKey = 'O43z0dpjhgX20SCx4KAo';
 const tokenTtlMs = 6 * 60 * 60_000;
 const minterRefreshBufferMs = 5 * 60_000;
@@ -53,7 +55,7 @@ function installBotGuardDom(JSDOM, userAgent) {
   }
 }
 
-async function createWebPoMinter({ fetchImpl = globalThis.fetch, now = Date.now } = {}) {
+async function createWebPoMinter({ fetchImpl = fetchWithTimeout, now = Date.now } = {}) {
   const [botGuard, webPo, utils, jsdom] = await Promise.all([
     import('bgutils-js/botguard'),
     import('bgutils-js/webpo'),
@@ -110,7 +112,7 @@ export function addPoToken(url, poToken) {
 
 export function createYouTubePoTokenService({
   createMinter = createWebPoMinter,
-  fetchImpl = globalThis.fetch,
+  fetchImpl = fetchWithTimeout,
   now = Date.now
 } = {}) {
   let minterPromise;

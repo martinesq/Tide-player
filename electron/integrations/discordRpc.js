@@ -154,6 +154,7 @@ function discordSongLinkInput(presence = {}) {
     album: trimDiscordText(presence.album),
     isrc: trimDiscordText(presence.isrc).toUpperCase(),
     youtubeVideoId: String(presence.youtubeVideoId || '').trim(),
+    permalinkUrl: String(presence.permalinkUrl || '').trim(),
     durationSeconds: Math.round(numberOrZero(presence.durationSeconds || presence.duration)),
     thumbnailUrl: normalizeDiscordImageUrl(presence.thumbnailUrl || presence.artworkUrl)
   };
@@ -179,6 +180,14 @@ function cacheDiscordSongLink(key, url) {
   if (firstKey) discordSongLinkCache.delete(firstKey);
 }
 
+// Direct page for the track when the song-link worker cannot answer.
+function directSongUrl(input) {
+  if (input.youtubeVideoId && !input.youtubeVideoId.startsWith('sc:')) {
+    return `https://music.youtube.com/watch?v=${encodeURIComponent(input.youtubeVideoId)}`;
+  }
+  return /^https:\/\/(www\.|m\.)?soundcloud\.com\//i.test(input.permalinkUrl) ? input.permalinkUrl : '';
+}
+
 export async function resolveDiscordSongLink(presence = {}) {
   const result = await resolveDiscordSongLinkDetails(presence);
   return result?.shareUrl || '';
@@ -190,6 +199,11 @@ export async function resolveDiscordSongLinkDetails(presence = {}) {
 
   const cacheKey = discordSongLinkCacheKey(input);
   if (discordSongLinkCache.has(cacheKey)) return discordSongLinkCache.get(cacheKey);
+
+  const directFallback = (value) => {
+    const shareUrl = directSongUrl(value);
+    return shareUrl ? { ok: true, shareUrl, links: [], direct: true } : null;
+  };
 
   const request = (async () => {
     const url = new URL('/resolve', discordSongLinksOrigin);
@@ -216,13 +230,15 @@ export async function resolveDiscordSongLinkDetails(presence = {}) {
       if (!response.ok) throw new Error(`Song link worker returned ${response.status}`);
       const data = await response.json();
       const shareUrl = absoluteSongLinksUrl(data?.shareUrl);
-      const result = data?.ok ? { ...data, shareUrl } : null;
-      cacheDiscordSongLink(cacheKey, result);
-      return result;
+      const result = data?.ok && shareUrl ? { ...data, shareUrl } : null;
+      const fallback = result || directFallback(input);
+      cacheDiscordSongLink(cacheKey, fallback);
+      return fallback;
     } catch (error) {
-      cacheDiscordSongLink(cacheKey, null);
       console.warn(`Could not resolve Discord song link: ${error.message}`);
-      return null;
+      const fallback = directFallback(input);
+      cacheDiscordSongLink(cacheKey, fallback);
+      return fallback;
     } finally {
       clearTimeout(timeout);
     }

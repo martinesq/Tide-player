@@ -163,7 +163,8 @@ export function createTrackInfoNormalizer({ bestThumbnail }) {
       artist: trackAuthor(info),
       durationSeconds: Number(basicInfo.duration || videoDetails.length_seconds || 0),
       thumbnail: bestThumbnail(basicInfo.thumbnail || videoDetails.thumbnails || []),
-      isLive: Boolean(basicInfo.is_live || basicInfo.isLiveContent || videoDetails.is_live || videoDetails.isLiveContent)
+      isLive: Boolean(basicInfo.is_live || basicInfo.isLiveContent || videoDetails.is_live || videoDetails.isLiveContent),
+      viewCount: Number(basicInfo.view_count || videoDetails.view_count || 0)
     };
   };
 }

@@ -27,6 +27,7 @@ export function registerAppHandlers({
   clearDiscordPresence,
   completeWelcome = () => {},
   graphicsMode,
+  launchPreferences,
   getMainWindow = () => null,
   ipcMain,
   isDev,
@@ -59,6 +60,9 @@ export function registerAppHandlers({
   }));
   ipcMain.handle(APP.GRAPHICS_MODE, (_event, value) => {
     return value === undefined ? graphicsMode.state() : graphicsMode.setMode(value);
+  });
+  ipcMain.handle(APP.LAUNCH_PREFERENCES, (_event, value) => {
+    return value === undefined ? launchPreferences.get() : launchPreferences.set(value);
   });
   ipcMain.handle(APP.RESTART, () => {
     graphicsMode.restart();

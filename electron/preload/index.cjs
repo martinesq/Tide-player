@@ -58,6 +58,9 @@ contextBridge.exposeInMainWorld('orchardApp', {
   graphicsMode: (value) => value === undefined
     ? ipcRenderer.invoke('app:graphics-mode')
     : ipcRenderer.invoke('app:graphics-mode', value),
+  launchPreferences: (value) => value === undefined
+    ? ipcRenderer.invoke('app:launch-preferences')
+    : ipcRenderer.invoke('app:launch-preferences', value),
   restart: () => ipcRenderer.invoke('app:restart'),
   showWelcome: (options = {}) => ipcRenderer.invoke('app:show-welcome', {
     resetCompletion: options?.resetCompletion === true

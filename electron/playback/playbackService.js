@@ -32,6 +32,7 @@ import {
   rawPlayableVideoOnlyFormats
 } from './playbackFormats.js';
 import {
+  fetchWithTimeout,
   isYouTubeMediaUrl,
   parseRangeHeader,
   pipeWebBody,
@@ -157,7 +158,7 @@ export function createPlaybackService({
       }
 
       const watchUrl = `${youtubeWebOrigin}/watch?v=${encodeURIComponent(videoId)}&bpctr=9999999999&has_verified=1`;
-      const response = await fetch(watchUrl, {
+      const response = await fetchWithTimeout(watchUrl, {
         headers: {
           'User-Agent': youtubeWebUserAgent,
           Cookie: cookie
@@ -179,7 +180,7 @@ export function createPlaybackService({
 
     androidVrIdentityPromise = (async () => {
       const watchUrl = `${youtubeWebOrigin}/watch?v=${encodeURIComponent(videoId)}&bpctr=9999999999&has_verified=1`;
-      const response = await fetch(watchUrl, {
+      const response = await fetchWithTimeout(watchUrl, {
         headers: {
           'User-Agent': youtubeWebUserAgent,
           Cookie: cookieWithPlaybackDefaults()
@@ -326,7 +327,7 @@ export function createPlaybackService({
         visitorData: identity.visitorData
       }
     };
-    const response = await fetch('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
+    const response = await fetchWithTimeout('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -614,7 +615,7 @@ export function createPlaybackService({
       // including URLs that omit rqh=1. Chromium can omit it initially.
       rangeHeader: upstreamRange
     });
-    const upstream = await fetch(upstreamRequest.url, { headers: upstreamRequest.headers });
+    const upstream = await fetchWithTimeout(upstreamRequest.url, { headers: upstreamRequest.headers });
     const failureKey = `${videoId}:${mediaKind}:${stream.format.itag}`;
     if ([403, 410, 429, 500, 502, 503, 504].includes(upstream.status) && allowRetry) {
       await upstream.body?.cancel().catch(() => {});
@@ -658,7 +659,7 @@ export function createPlaybackService({
       fallbackUserAgent: youtubeSafariUserAgent,
       rangeHeader
     });
-    const upstream = await fetch(upstreamRequest.url, { headers: upstreamRequest.headers });
+    const upstream = await fetchWithTimeout(upstreamRequest.url, { headers: upstreamRequest.headers });
     if (!upstream.ok && upstream.status !== 206) {
       await upstream.body?.cancel().catch(() => {});
       throw new Error(`Upstream HLS request failed with HTTP ${upstream.status}`);
@@ -690,7 +691,14 @@ export function createPlaybackService({
     }
   }
 
-  return { androidVrCooldownActive, playbackInfo, proxyHlsResource, proxyStream, resolveStream, songCache, updateSongCacheSettings: songCache.update };
+  // The BotGuard/WebPo minter (JSDOM VM + a couple of network round trips) is
+  // otherwise built lazily on the very first play, which is exactly the extra
+  // cold-start cost the renderer's music:track timeout can't always absorb.
+  function warmPoToken() {
+    return youtubePoTokenService.get('orchard-warmup').catch(() => {});
+  }
+
+  return { androidVrCooldownActive, playbackInfo, proxyHlsResource, proxyStream, resolveStream, songCache, updateSongCacheSettings: songCache.update, warmPoToken };
 }
 
 function cacheMetadata(options = {}) {

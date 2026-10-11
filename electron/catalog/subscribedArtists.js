@@ -21,7 +21,7 @@
 import { Innertube, UniversalCache } from 'youtubei.js';
 import { withFreshYouTubeSession } from '../auth/youtubeClientSession.js';
 
-const MAX_SUBSCRIPTION_PAGES = 20;
+const MAX_SUBSCRIPTION_PAGES = 500;
 
 function cleanText(value = '') {
   return String(value || '').replace(/\s+/g, ' ').trim();
