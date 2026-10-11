@@ -44,7 +44,7 @@ export default {
         <q-btn flat round dense icon="skip_next" :disable="!queue.length || buffering" @click="playNext" />
       </div>
       <div class="window-titlebar__brand">
-        <img class="titlebar-orchard-mark" :src="orchardLogoUrl" alt="Orchard" />
+        <img class="titlebar-orchard-mark" :src="orchardLogoUrl" alt="Tide" />
       </div>
       <div class="window-titlebar__controls">
         <button type="button" title="Minimize" @click="minimizeWindow">

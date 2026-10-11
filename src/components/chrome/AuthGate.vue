@@ -31,7 +31,7 @@ export default {
         <main v-if="showAuthGate" class="auth-gate" aria-live="polite">
           <section class="auth-gate__panel">
             <div class="auth-gate__mark">
-              <img :src="orchardLogoUrl" alt="Orchard" />
+              <img :src="orchardLogoUrl" alt="Tide" />
             </div>
             <div class="auth-gate__copy">
               <h2>Sign in to YouTube Music</h2>
