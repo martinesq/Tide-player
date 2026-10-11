@@ -76,7 +76,7 @@ export default {
 <template>
   <header class="canopy-bar" :class="{ 'canopy-bar--native': nativeTitlebar }">
     <div class="canopy-bar__brand">
-      <img class="canopy-bar__mark" :src="orchardLogoUrl" alt="Orchard" />
+      <img class="canopy-bar__mark" :src="orchardLogoUrl" alt="Tide" />
     </div>
 
     <div class="canopy-bar__transport">

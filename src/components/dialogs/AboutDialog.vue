@@ -37,7 +37,7 @@ export default {
       try {
         await window.orchardApp?.viewLicense?.();
       } catch (error) {
-        console.warn('Could not open the Orchard license.', error);
+        console.warn('Could not open the Tide license.', error);
       }
     }
   },
@@ -48,7 +48,7 @@ export default {
 </script>
 
 <template>
-  <q-dialog v-model="aboutDialogOpen" aria-label="About Orchard">
+  <q-dialog v-model="aboutDialogOpen" aria-label="About Tide">
     <q-card class="about-dialog-card">
       <q-btn
         v-close-popup
@@ -61,8 +61,8 @@ export default {
       />
 
       <div class="about-dialog__content">
-        <img class="about-dialog__logo" :src="orchardLogoUrl" alt="Orchard" />
-        <div class="about-dialog__name">Orchard</div>
+        <img class="about-dialog__logo" :src="orchardLogoUrl" alt="Tide" />
+        <div class="about-dialog__name">Tide</div>
         <div class="about-dialog__version">Version {{ currentReleaseLabel }}</div>
         <div class="about-dialog__license">
           <span>License</span>

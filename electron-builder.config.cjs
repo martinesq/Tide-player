@@ -246,7 +246,7 @@ module.exports = {
   },
   win: {
     target: ['nsis'],
-    icon: 'build/icon.ico',
+    icon: 'build/icon.png',
     // Default NSIS naming ("Orchard Setup 4.0.0.exe") contains spaces. GitHub Releases
     // silently rewrites spaces to dots on upload, which desyncs the filename from what's
     // recorded in latest.yml and breaks electron-updater downloads (404). R2 never
