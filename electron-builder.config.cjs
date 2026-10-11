@@ -262,6 +262,6 @@ module.exports = {
     // Default NSIS is a silent one-click installer with no folder picker.
     // Let people choose where Tide goes instead.
     oneClick: false,
-    allowToChangeInstallationLocation: true
+    allowToChangeInstallationDirectory: true
   }
 };
