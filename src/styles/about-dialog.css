@@ -17,6 +17,12 @@
  * along with Orchard. If not, see <https://www.gnu.org/licenses/>.
  */
 
+/* See update-dialog.css: Quasar's dialog z-index sits below the player
+ * bar's elevated layer without this. */
+.q-dialog:has(.about-dialog-card) {
+  z-index: 12800 !important;
+}
+
 .about-dialog-card {
   position: relative;
   width: min(360px, calc(100vw - 32px));
