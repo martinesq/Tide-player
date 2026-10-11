@@ -9,7 +9,6 @@
  * later version.
  */
 
-const nativeHlsMimeType = 'application/vnd.apple.mpegurl';
 const hlsInstances = new WeakMap();
 const loadGenerations = new WeakMap();
 
@@ -30,12 +29,6 @@ export async function loadPlaybackSource(element, source, mimeType = '') {
   const generation = loadGenerations.get(element) || 0;
 
   if (!isHlsPlaybackMime(mimeType)) {
-    element.src = source;
-    element.load();
-    return true;
-  }
-
-  if (element.canPlayType(nativeHlsMimeType)) {
     element.src = source;
     element.load();
     return true;
