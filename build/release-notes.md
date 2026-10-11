@@ -1,8 +1,6 @@
-## Tide 4.7.4
+## Tide 4.7.5
 
-### Changed
-- The Windows installer now lets you pick an install folder instead of silently installing to a fixed path.
-- Removed the leftover "Orchard Tauri" migration notice, which doesn't apply to Tide and pinged SFG545's servers on every launch for a banner nothing ever displayed.
-- Fixed a couple of leftover Orchard links (bug report, About dialog) to point at this repo.
+### Fixed
+- The Update dialog's Install button (and several other dialogs) could end up hidden behind the bottom player bar, making it unclickable. Dialogs now always render above the player bar.
 
 Tide is an independent fork of [Orchard](https://github.com/sfg5453/orchard) by SFG545.
