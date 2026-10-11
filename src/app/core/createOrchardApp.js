@@ -129,5 +129,10 @@ export function createOrchardApp() {
   installListeningPartyActions(ctx);
   installLifecycle(ctx);
 
+  // Exposed for public/orchard-sources.js, a standalone script that reads
+  // playback/view state and triggers a refetch after switching the YT
+  // Music / SoundCloud source without reloading the whole renderer.
+  window.__orchardStore = ctx;
+
   return ctx;
 }
