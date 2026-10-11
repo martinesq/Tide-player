@@ -1,24 +1,25 @@
 <div align="center">
-  <img src="public/orchard-logo.png" alt="Orchard logo" width="128">
+  <img src="public/orchard-logo.png" alt="Tide logo" width="128">
 
-# Orchard
+# Tide
 
 **A power-user desktop client for YouTube Music.**
 
-Real shuffle, Best Mix queue sorting, smart crossfade, advanced audio controls, Replay, Orchard Connect, listening parties, lyrics, Last.fm, Discord Rich Presence, and more.
+Real shuffle, Best Mix queue sorting, smart crossfade, advanced audio controls, Replay, Tide Connect, listening parties, lyrics, Last.fm, Discord Rich Presence, and more.
 
-[![Latest release](https://img.shields.io/github/v/release/SFG5453/Orchard?display_name=tag\&sort=semver)](https://sfg545.dev/orchard)
-[![License](https://img.shields.io/github/license/SFG5453/Orchard)](LICENSE)
-[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS-informational)](https://sfg545.dev/orchard)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Donate-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/sfg545)
+[![Latest release](https://img.shields.io/github/v/release/martinesq/Tide-player?display_name=tag\&sort=semver)](https://github.com/martinesq/Tide-player/releases/latest)
+[![License](https://img.shields.io/github/license/martinesq/Tide-player)](LICENSE)
+[![Platforms](https://img.shields.io/badge/platforms-Windows-informational)](https://github.com/martinesq/Tide-player/releases/latest)
 
-[Download Orchard](https://sfg545.dev/orchard) · [Report an issue](https://github.com/SFG5453/Orchard/issues) · [Support on Ko-fi](https://ko-fi.com/sfg545) · [View the source](https://github.com/SFG5453/Orchard)
+[Download Tide](https://github.com/martinesq/Tide-player/releases/latest) · [Report an issue](https://github.com/martinesq/Tide-player/issues) · [View the source](https://github.com/martinesq/Tide-player)
 
 </div>
 
+Tide is an independent fork of [Orchard](https://github.com/sfg5453/orchard) by SFG545, kept as its own project rather than tracking Orchard's upstream releases. It is licensed under the same AGPL-3.0-or-later terms as the original project.
+
 ---
 
-Orchard is an open-source, unofficial YouTube Music desktop client built for people who want more control over playback, queues, audio, discovery, and connected devices than the website provides.
+Tide is an open-source, unofficial YouTube Music desktop client built for people who want more control over playback, queues, audio, discovery, and connected devices than the website provides.
 
 It signs in through an embedded browser session and uses browser-backed InnerTube requests to access YouTube Music. Orchard is not affiliated with or endorsed by YouTube or Google.
 
@@ -82,32 +83,31 @@ https://github.com/user-attachments/assets/96391b60-1b48-4be7-aec3-eb0cd9ea6960
 
 ## Download
 
-Get the latest release from **[sfg545.dev/orchard](https://sfg545.dev/orchard)**.
+Get the latest release from **[github.com/martinesq/Tide-player/releases](https://github.com/martinesq/Tide-player/releases/latest)**.
 
-| Platform | Available packages                                            |
-| -------- | ------------------------------------------------------------- |
-| Windows  | NSIS installer                                                |
-| Linux    | AppImage, Debian package, RPM package, and Arch Linux package |
-| macOS    | ZIP packages for Apple Silicon and Intel                      |
+| Platform | Available packages |
+| -------- | ------------------- |
+| Windows  | NSIS installer       |
 
-Release files and `SHA256SUMS.txt` are also published at [downloads.sfg545.dev/orchard](https://downloads.sfg545.dev/orchard/).
+Tide auto-updates installed copies from this repo's GitHub Releases.
 
 > [!NOTE]
-> Current Windows and macOS builds are unsigned. Your operating system may display a warning during the first launch. Only install Orchard from the official website or this repository, and verify the published checksum when possible.
+> Current Windows builds are unsigned. Your operating system may display a warning during the first launch. Only install Tide from this repository's Releases page.
 
 ## Building from source
 
 ### Requirements
 
 * Node.js 24 and npm
+* Rust (for the native media crate)
 * Python
 * A C++17 toolchain supported by `node-gyp`
 
 Clone the repository and install the locked dependencies:
 
 ```bash
-git clone https://github.com/SFG5453/Orchard.git
-cd Orchard
+git clone https://github.com/martinesq/Tide-player.git
+cd Tide-player
 npm ci
 ```
 
@@ -211,26 +211,24 @@ Before submitting a code change:
 4. Run `npm run build:frontend` for renderer-only work, or `npm run build` when native code is affected.
 5. Explain what changed and how it was tested.
 
-Use the [Issues tab](https://github.com/SFG5453/Orchard/issues) for all public bug reports and feature requests. Private reports with optional diagnostics and screenshots can be submitted through Orchard's in-app Support System.
+Use the [Issues tab](https://github.com/martinesq/Tide-player/issues) for all public bug reports and feature requests.
 
 ## Support
 
-If you enjoy using Orchard and would like to support its development, consider [buying me a coffee on Ko-fi](https://ko-fi.com/sfg545).
+Tide is a personal fork of [Orchard](https://github.com/sfg5453/orchard). If you enjoy the underlying project and want to support its original author's development, consider [buying them a coffee on Ko-fi](https://ko-fi.com/sfg545).
 
 ## Service dependencies
 
-Some Orchard features depend on external services and may stop working when those services change. This includes YouTube Music sign-in, catalog access, playback, live-show discovery, sharing, scrobbling, updates, and support.
+Some Tide features depend on external services and may stop working when those services change. This includes YouTube Music sign-in, catalog access, playback, live-show discovery, sharing, scrobbling, updates, and support.
 
 BPM and musical-key metadata is provided by [GetSongBPM](https://getsongbpm.com).
 
 ## License
 
-Orchard is available under the [GNU Affero General Public License v3.0 or
-later](LICENSE). Releases up to and including 3.x were published under the MIT
-License; that grant is irrevocable, so those versions remain MIT. Everything
-from 4.0.0 onward is AGPL-3.0-or-later.
-
-Copyright © 2025–2026 SFG545.
+Tide is available under the [GNU Affero General Public License v3.0 or
+later](LICENSE), the same license as the Orchard project it's forked from.
+Copyright © 2025–2026 SFG545 for the original Orchard codebase; modifications
+in this fork are Copyright © 2026 martinesq.
 
 Orchard is free software: you can redistribute it and/or modify it under the
 terms of the GNU Affero General Public License as published by the Free
