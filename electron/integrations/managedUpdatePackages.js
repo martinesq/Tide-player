@@ -24,7 +24,7 @@ import semver from 'semver';
 const PACKAGE_DETAILS = Object.freeze({
   arch: Object.freeze({ label: 'Arch Linux package', installHint: 'Install it with your Arch package manager.' }),
   deb: Object.freeze({ label: 'Debian package', installHint: 'Open the downloaded DEB with your package manager.' }),
-  flatpak: Object.freeze({ label: 'Flatpak bundle', installHint: 'Open the downloaded Flatpak bundle to update Orchard.' }),
+  flatpak: Object.freeze({ label: 'Flatpak bundle', installHint: 'Open the downloaded Flatpak bundle to update Tide.' }),
   rpm: Object.freeze({ label: 'RPM package', installHint: 'Open the downloaded RPM with your package manager.' })
 });
 

@@ -1,8 +1,6 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
-const updateUrl = process.env.ORCHARD_UPDATE_URL || 'https://downloads.sfg545.dev/orchard/';
-
 const ONNX_PLATFORMS = new Set(['darwin', 'linux', 'win32']);
 const ONNX_ARCHITECTURES = new Set(['x64', 'arm64']);
 const ONNX_ARCH_NAMES = new Map([
@@ -127,18 +125,19 @@ async function pruneOnnxRuntime(context) {
 }
 
 module.exports = {
-  appId: 'dev.sfg.orchard',
-  productName: 'Orchard',
+  appId: 'dev.martinesq.tide',
+  productName: 'Tide',
   asar: true,
   publish: {
-    provider: 'generic',
-    url: updateUrl
+    provider: 'github',
+    owner: 'martinesq',
+    repo: 'Tide-player'
   },
   // Beta versions carry a semver prerelease suffix (e.g. 4.0.0-beta.1). electron-builder
   // otherwise infers an update "channel" from that suffix and names manifests beta.yml /
-  // beta-mac.yml / beta-linux.yml instead of latest*.yml. Beta vs. stable here is decided
-  // by publish destination (GitHub Release vs. R2), not by manifest channel, so keep the
-  // filenames constant across both.
+  // beta-mac.yml / beta-linux.yml instead of latest*.yml. Stable and beta both publish as
+  // GitHub Releases on the same repo (beta releases are flagged prerelease), so keep the
+  // manifest filenames constant across both.
   detectUpdateChannel: false,
   releaseInfo: {
     releaseNotesFile: 'build/release-notes.md'
@@ -209,8 +208,8 @@ module.exports = {
     target: ['AppImage', 'deb', 'rpm'],
     category: 'Audio',
     icon: 'build/icon.png',
-    maintainer: 'SFG545 <sfg@sfg545.dev>',
-    vendor: 'SFG545',
+    maintainer: 'martinesq <martinesquivel207@gmail.com>',
+    vendor: 'martinesq',
     syncDesktopName: true
   },
   deb: {
@@ -240,7 +239,7 @@ module.exports = {
       '--talk-name=org.freedesktop.secrets',
       '--talk-name=org.kde.StatusNotifierWatcher',
       '--talk-name=com.canonical.AppMenu.Registrar',
-      '--own-name=org.mpris.MediaPlayer2.Orchard',
+      '--own-name=org.mpris.MediaPlayer2.Tide',
       '--filesystem=xdg-run/discord-ipc-0',
       '--env=ORCHARD_DISTRIBUTION_PACKAGE=Flatpak'
     ]

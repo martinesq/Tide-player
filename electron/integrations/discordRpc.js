@@ -26,7 +26,7 @@ const { Client: DiscordRpcClient } = require('@xhayper/discord-rpc');
 const discordApplicationId = '1531666622312353803';
 const discordSongLinksOrigin = 'https://songlinks.sfg545.dev';
 const discordArtworkProxyOrigin = 'https://artwork-proxy.sfg545.dev';
-const discordOrchardProjectUrl = 'https://sfg545.dev/orchard';
+const discordOrchardProjectUrl = 'https://github.com/martinesq/Tide-player';
 const discordSongLinkCache = new Map();
 const discordArtworkWarmCache = new Map();
 const discordArtworkVersion = '7';
@@ -123,7 +123,7 @@ async function warmDiscordArtwork(url) {
 
     try {
       const response = await fetch(url, {
-        headers: { accept: 'image/gif', 'user-agent': 'Orchard Discord RPC' },
+        headers: { accept: 'image/gif', 'user-agent': 'Tide Discord RPC' },
         signal: controller.signal
       });
       if (!response.ok) throw new Error(`Artwork proxy returned ${response.status}`);
@@ -222,7 +222,7 @@ export async function resolveDiscordSongLinkDetails(presence = {}) {
       const response = await fetch(url, {
         headers: {
           accept: 'application/json',
-          'user-agent': 'Orchard Discord RPC'
+          'user-agent': 'Tide Discord RPC'
         },
         signal: controller.signal
       });
@@ -252,14 +252,14 @@ function buildDiscordActivity(presence = {}, options = {}) {
   if (!presence?.title) return null;
 
   const title = trimDiscordText(presence.title, 'Playing music');
-  const artist = trimDiscordText(presence.artist, 'Orchard');
+  const artist = trimDiscordText(presence.artist, 'Tide');
   const album = trimDiscordText(presence.album);
   const currentTime = numberOrZero(presence.currentTime);
   const duration = numberOrZero(presence.duration);
   const isPlaying = Boolean(presence.isPlaying);
   const details = isPlaying ? title : `Paused - ${title}`;
   const activity = {
-    name: artist || 'Orchard',
+    name: artist || 'Tide',
     type: 2,
     details,
     state: artist,
@@ -278,7 +278,7 @@ function buildDiscordActivity(presence = {}, options = {}) {
 
   const buttons = [
     { label: 'Listen on Your Platform', url: options.songLinkUrl },
-    { label: 'View the Orchard Project', url: discordOrchardProjectUrl }
+    { label: 'View the Tide Project', url: discordOrchardProjectUrl }
   ].filter((button) => normalizeDiscordUrl(button.url));
 
   if (buttons.length) activity.buttons = buttons.slice(0, 2);

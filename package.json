@@ -1,13 +1,13 @@
 {
-  "name": "orchard",
+  "name": "tide",
   "version": "4.7.3",
-  "description": "A Quasar, Vue, Socket.IO, Electron YouTube Music client backed by InnerTube.",
-  "homepage": "https://github.com/sfg5453/orchard",
+  "description": "A Quasar, Vue, Socket.IO, Electron YouTube Music client backed by InnerTube. Tide is an independent fork of Orchard (https://github.com/sfg5453/orchard).",
+  "homepage": "https://github.com/martinesq/Tide-player",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sfg5453/orchard.git"
+    "url": "git+https://github.com/martinesq/Tide-player.git"
   },
-  "desktopName": "dev.sfg.orchard",
+  "desktopName": "dev.martinesq.tide",
   "main": "electron/main/index.js",
   "type": "module",
   "private": true,
@@ -41,8 +41,8 @@
     "ytmusic"
   ],
   "author": {
-    "name": "SFG545",
-    "email": "sfg@sfg545.dev"
+    "name": "martinesq",
+    "email": "martinesquivel207@gmail.com"
   },
   "license": "AGPL-3.0-or-later",
   "dependencies": {

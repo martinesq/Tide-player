@@ -26,8 +26,8 @@ import { IPC_CHANNELS } from '../../shared/ipcChannels.js';
 const require = createRequire(import.meta.url);
 const { SYSTEM_MEDIA } = IPC_CHANNELS;
 
-const DBUS_NAME = 'Orchard';
-const DISPLAY_NAME = 'Orchard';
+const DBUS_NAME = 'Tide';
+const DISPLAY_NAME = 'Tide';
 const DESKTOP_ENTRY = 'dev.sfg.orchard';
 
 function loadAddon() {

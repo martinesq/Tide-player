@@ -17,7 +17,7 @@
  * along with Orchard. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Hosts the intentionally LAN-visible Orchard Connect endpoint. Pairing tokens
+// Hosts the intentionally LAN-visible Tide Connect endpoint. Pairing tokens
 // authorize first contact; persisted device tokens are stored only as hashes.
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -162,7 +162,7 @@ async function loadStoredDevices(deviceStorePath) {
         lastSeenAt: Number(device.lastSeenAt) || 0
       }));
   } catch (error) {
-    if (error?.code !== 'ENOENT') console.warn(`Could not load Orchard Connect devices: ${error.message}`);
+    if (error?.code !== 'ENOENT') console.warn(`Could not load Tide Connect devices: ${error.message}`);
     return [];
   }
 }
@@ -180,7 +180,7 @@ async function saveStoredDevices(deviceStorePath, devices) {
     await fs.writeFile(tmpPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
     await fs.rename(tmpPath, deviceStorePath);
   } catch (error) {
-    console.warn(`Could not save Orchard Connect devices: ${error.message}`);
+    console.warn(`Could not save Tide Connect devices: ${error.message}`);
   }
 }
 
@@ -239,7 +239,7 @@ export async function createOrchardConnectServer({ Server, desktopIo, deviceStor
         'Content-Type': 'application/json; charset=utf-8'
       });
       res.end(JSON.stringify({
-        name: 'Orchard Connect',
+        name: 'Tide Connect',
         serverUrl: baseUrl(),
         port: httpServer.address().port,
         preferredPort: preferredConnectPort,
