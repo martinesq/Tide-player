@@ -1,7 +1,12 @@
+## Tide 4.7.11
+
+### Fixed
+- The actual cause of the RAM spikes from 4.7.10: Automatic EQ's tempo analysis decoded the full track on every single track change, with no way to cancel it, regardless of crossfade mode. Switching tracks quickly piled up multiple uncancelled full-track decodes at once. It now cancels the previous track's analysis the instant a new one starts.
+
 ## Tide 4.7.10
 
 ### Fixed
-- Switching tracks quickly (clicking through several in a row) could spike RAM usage up to several GB. Smart Crossfade analysis used to start a full-track decode the instant a track began playing; it now waits 1.5s and skips the decode entirely if you've already moved to another track by then.
+- Switching tracks quickly (clicking through several in a row) could spike RAM usage up to several GB. Smart Crossfade analysis used to start a full-track decode the instant a track began playing; it now waits 1.5s and skips the decode entirely if you've already moved to another track by then. (Turned out not to be the main cause — see 4.7.11.)
 
 ## Tide 4.7.9
 

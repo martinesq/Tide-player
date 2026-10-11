@@ -102,6 +102,7 @@ export function createAutomaticEq({ analyzer }) {
   let sampleCount = 0;
   let analysisToken = 0;
   let ready = false;
+  let analysisAbort = null;
 
   function rebuildClusters() {
     if (profiles.length < 6) {
@@ -159,8 +160,11 @@ export function createAutomaticEq({ analyzer }) {
       if (token === analysisToken && currentTrack) currentTrack.tempo = existing.tempo;
       return;
     }
+    analysisAbort?.abort();
+    const controller = new AbortController();
+    analysisAbort = controller;
     try {
-      const buffer = await analyzer.decodeAudio(streamUrl);
+      const buffer = await analyzer.decodeAudio(streamUrl, controller.signal);
       if (!buffer || token !== analysisToken) return;
       const offset = buffer.duration > 70 ? Math.min(30, buffer.duration * 0.2) : 0;
       const duration = Math.min(45, Math.max(5, buffer.duration - offset));
