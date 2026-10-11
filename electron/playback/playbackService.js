@@ -57,7 +57,8 @@ import {
   hlsMimeType,
   youtubeSafariUserAgent
 } from './authenticatedYouTubePlayback.js';
-import { addPoToken, createYouTubePoTokenService } from './youtubePoToken.js';
+import { addPoToken } from './youtubePoToken.js';
+import { createPoTokenHost } from './poTokenHost.js';
 const youtubeWebUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Safari/605.1.15,gzip(gfe)';
 const androidVrClient = {
   clientName: 'ANDROID_VR',
@@ -116,7 +117,7 @@ export function createPlaybackService({
   youtubeMusicClientVersion = '1.20260213.01.00',
   youtubeMusicOrigin = 'https://music.youtube.com',
   youtubeWebOrigin,
-  youtubePoTokenService = createYouTubePoTokenService()
+  youtubePoTokenService = createPoTokenHost()
 }) {
   const streamCache = createPlaybackStreamCache();
   const upstreamFailures = new Map();
@@ -698,7 +699,17 @@ export function createPlaybackService({
     return youtubePoTokenService.get('orchard-warmup').catch(() => {});
   }
 
-  return { androidVrCooldownActive, playbackInfo, proxyHlsResource, proxyStream, resolveStream, songCache, updateSongCacheSettings: songCache.update, warmPoToken };
+  return {
+    androidVrCooldownActive,
+    playbackInfo,
+    proxyHlsResource,
+    proxyStream,
+    resolveStream,
+    songCache,
+    stop: () => youtubePoTokenService.stop?.(),
+    updateSongCacheSettings: songCache.update,
+    warmPoToken
+  };
 }
 
 function cacheMetadata(options = {}) {

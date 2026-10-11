@@ -19,18 +19,18 @@
 
 // Entry point of the vocal-mask utility process. Mirrors beatModelProcess.js
 // exactly -- see that file for why inference runs isolated from the main
-// process at all. Same one-message-per-request protocol: {id, spectrogram,
-// modelPath} in, {id, result} out, where result is trackVocalMask's verdict
-// or null.
+// process at all. Same one-message-per-request protocol: {id, payload,
+// modelPath} in, {id, result} out, where payload is the spectrogram and
+// result is trackVocalMask's verdict or null.
 import { trackVocalMask } from './vocalMaskTracker.js';
 
 process.parentPort.on('message', (event) => {
-  const { id, spectrogram, modelPath } = event?.data || {};
+  const { id, payload, modelPath } = event?.data || {};
   if (!Number.isFinite(Number(id))) return;
   void (async () => {
     let result = null;
     try {
-      result = await trackVocalMask(spectrogram, modelPath ? { modelPath } : {});
+      result = await trackVocalMask(payload, modelPath ? { modelPath } : {});
     } catch {
       result = null;
     }

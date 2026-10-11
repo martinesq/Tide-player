@@ -46,7 +46,23 @@ export default {
       props.app.uiScale.value = scale;
     };
 
-    return { ...props.app, app: props.app, layoutPresetDescription, uiScaleDraft, applyUiScale };
+    const memoryTrimIntervalDraft = ref(props.app.memoryTrimIntervalSeconds.value);
+    watch(props.app.memoryTrimIntervalSeconds, (seconds) => {
+      memoryTrimIntervalDraft.value = seconds;
+    });
+    const applyMemoryTrimIntervalSeconds = (seconds) => {
+      void props.app.setMemoryTrimIntervalSeconds(seconds);
+    };
+
+    return {
+      ...props.app,
+      app: props.app,
+      layoutPresetDescription,
+      uiScaleDraft,
+      applyUiScale,
+      memoryTrimIntervalDraft,
+      applyMemoryTrimIntervalSeconds
+    };
   }
 };
 </script>
@@ -85,6 +101,10 @@ export default {
       <a v-if="proxyModeAvailable" href="#settings-network">
         <q-icon name="lan" />
         <span>Network</span>
+      </a>
+      <a v-if="memoryTrimAvailable" href="#settings-performance">
+        <q-icon name="speed" />
+        <span>Performance</span>
       </a>
       <a href="#settings-diagnostics">
         <q-icon name="fact_check" />
@@ -639,6 +659,55 @@ export default {
         </div>
 
         <p v-if="proxyModeMessage" class="settings-connect__message">{{ proxyModeMessage }}</p>
+      </section>
+
+      <section
+        v-if="memoryTrimAvailable"
+        id="settings-performance"
+        class="settings-section"
+        aria-labelledby="settings-performance-title"
+      >
+        <div class="settings-section__heading">
+          <h2 id="settings-performance-title">Performance</h2>
+          <p>Experimental options for how Orchard uses system resources.</p>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-row__copy">
+            <label for="settings-memory-trim">Trim memory usage</label>
+            <p>
+              Experimental. Asks Windows to release each of Orchard's processes' idle memory back to
+              the system on the interval below, the same way a RAM-cleaning utility does for a single
+              program. This does not reduce how much memory Orchard actually needs -- it comes back as
+              soon as it's used again -- so it won't help if Orchard feels slow, only if Task Manager's
+              number bothers you. Turn it off if you notice more stutter after enabling it.
+            </p>
+          </div>
+          <q-toggle id="settings-memory-trim" v-model="memoryTrimToggle" color="primary" aria-label="Trim memory usage" />
+        </div>
+
+        <div class="settings-row settings-row--slider" :class="{ 'settings-row--disabled': !memoryTrimEnabled }">
+          <div class="settings-row__copy">
+            <label for="settings-memory-trim-interval">Trim interval</label>
+            <p>How often to trim, in seconds.</p>
+          </div>
+          <div class="settings-slider">
+            <q-slider
+              id="settings-memory-trim-interval"
+              v-model="memoryTrimIntervalDraft"
+              :min="1"
+              :max="600"
+              :step="1"
+              :disable="!memoryTrimEnabled"
+              color="primary"
+              aria-label="Trim interval"
+              @change="applyMemoryTrimIntervalSeconds"
+            />
+            <output for="settings-memory-trim-interval">{{ memoryTrimIntervalDraft }} second{{ memoryTrimIntervalDraft === 1 ? '' : 's' }}</output>
+          </div>
+        </div>
+
+        <p v-if="memoryTrimMessage" class="settings-connect__message">{{ memoryTrimMessage }}</p>
       </section>
 
       <DiagnosticsSection :app="app" />

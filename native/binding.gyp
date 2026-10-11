@@ -64,6 +64,38 @@
           }
         }]
       ]
+    },
+    {
+      # Separate from orchard_audio_analysis on purpose: that binary's N-API
+      # boundary documents itself as the offline analyzer's, with threading
+      # and ownership rules specific to DSP AsyncWorkers. This one is a single
+      # synchronous OS call with none of that, and keeping it in its own
+      # binary keeps both comments honest. platform/memory_trim.cpp is a
+      # no-op off Windows, so this target builds everywhere without any
+      # per-OS conditions.
+      "target_name": "orchard_memory_trim",
+      "sources": ["platform/memory_trim.cpp"],
+      "include_dirs": [
+        "<!@(node -p \"require('node-addon-api').include\")"
+      ],
+      "dependencies": [
+        "<!(node -p \"require('node-addon-api').gyp\")"
+      ],
+      "defines": [
+        "NAPI_DISABLE_CPP_EXCEPTIONS"
+      ],
+      "conditions": [
+        ["OS=='win'", {
+          "msvs_settings": {
+            "VCCLCompilerTool": {
+              "AdditionalOptions": ["/std:c++17"]
+            }
+          }
+        }],
+        ["OS!='win'", {
+          "cflags_cc": ["-std=c++17"]
+        }]
+      ]
     }
   ]
 }

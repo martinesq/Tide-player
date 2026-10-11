@@ -18,7 +18,7 @@
 -->
 
 <script>
-import { computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import CompactSettingsMenu from '../controls/CompactSettingsMenu.vue';
 import { createVolumeWheelHandler } from '../../app/playback/volumeWheel.js';
 import { bitrateLabel } from '../../app/playback/trackQuality.js';
@@ -65,15 +65,27 @@ export default {
       }
     };
 
-    onMounted(() => {
+    // Chromium starts its video-capture utility process (~100 MB) the moment
+    // anything calls navigator.mediaDevices.enumerateDevices(), even though
+    // this only ever asks for audio outputs -- the device-change monitor
+    // watches both device kinds together. Loading this at mount paid that
+    // cost on every launch for a menu most sessions never open. Deferring to
+    // the menu's first open means the common "system default" session never
+    // pays it at all; the existing loading/empty states already cover the
+    // brief gap before the list arrives.
+    let outputDevicesRequested = false;
+    const loadOutputDevicesOnce = () => {
+      if (outputDevicesRequested) return;
+      outputDevicesRequested = true;
       props.app.loadAudioOutputDevices?.();
-    });
+    };
 
     return {
       ...props.app,
       app: props.app,
       bitrateLabel,
       currentOutputDeviceLabel,
+      loadOutputDevicesOnce,
       volumeIcon,
       onVolumeWheel,
       toggleMute,
@@ -291,7 +303,7 @@ export default {
           <q-icon name="headphones" size="16px" class="q-mr-xs" />
           <span class="output-device-label">{{ currentOutputDeviceLabel }}</span>
           <q-icon name="expand_more" size="16px" class="q-ml-xs" />
-          <q-menu dark anchor="bottom right" self="top right" class="player-popup-menu">
+          <q-menu dark anchor="bottom right" self="top right" class="player-popup-menu" @show="loadOutputDevicesOnce">
             <q-list dark style="min-width: 180px">
               <q-item v-if="audioOutputLoading" disable>
                 <q-item-section class="text-grey text-caption">Loading devices...</q-item-section>

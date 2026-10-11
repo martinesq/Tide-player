@@ -124,6 +124,15 @@ contextBridge.exposeInMainWorld('orchardNetwork', {
   setProxyMode: (mode) => ipcRenderer.invoke('network:set-proxy-mode', mode)
 });
 
+// Experimental: periodically trims this app's own processes' working sets.
+// Off by default; see electron/platform/memoryTrim.js for exactly what it
+// does and does not touch.
+contextBridge.exposeInMainWorld('orchardMemoryTrim', {
+  getState: () => ipcRenderer.invoke('memory-trim:get-state'),
+  setEnabled: (enabled) => ipcRenderer.invoke('memory-trim:set-enabled', Boolean(enabled)),
+  setIntervalSeconds: (seconds) => ipcRenderer.invoke('memory-trim:set-interval-seconds', Number(seconds))
+});
+
 contextBridge.exposeInMainWorld('orchardCrypto', {
   randomInt: (maxExclusive) => randomInt(Number(maxExclusive))
 });

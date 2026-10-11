@@ -28,20 +28,21 @@
 // of that size does not belong in its event loop's process, worker pool or
 // not.
 //
-// The protocol is one message per request: {id, spectrogram, modelPath} in,
-// {id, result} out, where result is trackBeats' verdict or null. Every failure
-// mode inside the request resolves to a null result rather than an error --
-// the parent treats "no model opinion" and "model broke" identically, as a
-// routing decision back to the Essentia pass.
+// The protocol is one message per request: {id, payload, modelPath} in,
+// {id, result} out, where payload is the spectrogram and result is
+// trackBeats' verdict or null. Every failure mode inside the request
+// resolves to a null result rather than an error -- the parent treats "no
+// model opinion" and "model broke" identically, as a routing decision back
+// to the Essentia pass.
 import { trackBeats } from './beatThisTracker.js';
 
 process.parentPort.on('message', (event) => {
-  const { id, spectrogram, modelPath } = event?.data || {};
+  const { id, payload, modelPath } = event?.data || {};
   if (!Number.isFinite(Number(id))) return;
   void (async () => {
     let result = null;
     try {
-      result = await trackBeats(spectrogram, modelPath ? { modelPath } : {});
+      result = await trackBeats(payload, modelPath ? { modelPath } : {});
     } catch {
       result = null;
     }

@@ -38,7 +38,7 @@ const ENTRY_PATH = path
   .join(here, 'beatModelProcess.js')
   .replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
 
-export function createBeatModelHost({ modelPath, log, timeoutMs, fork } = {}) {
+export function createBeatModelHost({ modelPath, log, timeoutMs, idleTimeoutMs, fork } = {}) {
   // Destructuring defaults in createModelProcessHost apply whenever a value
   // is `undefined`, whether or not the key was present here, so passing
   // these straight through preserves its defaults for callers that omit them.
@@ -48,6 +48,7 @@ export function createBeatModelHost({ modelPath, log, timeoutMs, fork } = {}) {
     modelPath,
     log,
     timeoutMs,
+    idleTimeoutMs,
     fork
   });
 
@@ -55,5 +56,10 @@ export function createBeatModelHost({ modelPath, log, timeoutMs, fork } = {}) {
    * Runs one spectrogram through the model in the utility process. Resolves
    * to trackBeats' verdict, or null whenever the child cannot answer.
    */
-  return { track: host.run, stop: host.stop };
+  async function track(spectrogram) {
+    if (!spectrogram?.frames) return null;
+    return host.run(spectrogram);
+  }
+
+  return { track, stop: host.stop };
 }

@@ -40,6 +40,7 @@ export function resolveRuntimePaths({ app, isDev }) {
     appIconPath: path.join(appRoot, isDev ? 'build/icon.png' : 'dist/orchard-logo.png'),
     licensePath: path.join(appRoot, 'LICENSE'),
     nativeModulePath: path.join(unpackedRoot, 'native/build/Release/orchard_audio_analysis.node'),
+    memoryTrimModulePath: path.join(unpackedRoot, 'native/build/Release/orchard_memory_trim.node'),
     // Opened by ONNX Runtime's native code, which cannot read inside an asar,
     // so the packaged copy lives in app.asar.unpacked like the addon above.
     beatModelPath: path.join(unpackedRoot, 'models/beat-this/beat_this_int8.onnx'),

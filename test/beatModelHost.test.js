@@ -122,6 +122,53 @@ test('unusable spectrograms never fork a process', async () => {
   assert.equal(forks, 0, 'an empty spectrogram must not pay for a process');
 });
 
+test('an idle child is retired after the quiet period, and the next request re-forks', async () => {
+  const children = [];
+  const host = createBeatModelHost({
+    idleTimeoutMs: 20,
+    fork: async () => {
+      const child = fakeChild();
+      child.onSend = (message) => {
+        queueMicrotask(() => child.emit('message', { id: message.id, result: { bpm: 128 } }));
+      };
+      children.push(child);
+      return child;
+    }
+  });
+
+  assert.deepEqual(await host.track(spectrogram), { bpm: 128 });
+  assert.equal(children[0].killed, false, 'the child must stay up immediately after answering');
+
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.equal(children[0].killed, true, 'a quiet child must be retired rather than held forever');
+
+  assert.deepEqual(await host.track(spectrogram), { bpm: 128 });
+  assert.equal(children.length, 2, 'the next request must re-fork rather than reuse the retired child');
+  host.stop();
+});
+
+test('a request arriving right as the idle timer elapses still gets its reply', async () => {
+  const children = [];
+  const host = createBeatModelHost({
+    idleTimeoutMs: 10,
+    fork: async () => {
+      const child = fakeChild();
+      child.onSend = (message) => {
+        queueMicrotask(() => child.emit('message', { id: message.id, result: { bpm: 100 } }));
+      };
+      children.push(child);
+      return child;
+    }
+  });
+
+  assert.deepEqual(await host.track(spectrogram), { bpm: 100 });
+  // Outlast the idle timer without issuing a request, then issue one: this
+  // must still work by re-forking, not hang on a retired child.
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.deepEqual(await host.track(spectrogram), { bpm: 100 });
+  host.stop();
+});
+
 test('stop resolves whatever is still in flight', async () => {
   const children = [];
   const host = createBeatModelHost({

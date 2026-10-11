@@ -72,6 +72,7 @@ import { createMusicVideoFallback } from '../playback/musicVideoFallback.js';
 import { createPlaybackService } from '../playback/playbackService.js';
 import { registerAppHandlers } from '../platform/appHandlers.js';
 import { registerClipboardHandlers } from '../platform/clipboard.js';
+import { registerMemoryTrim } from '../platform/memoryTrim.js';
 import { registerNetworkPreferences } from '../platform/networkPreferences.js';
 import { setupDesktopControls } from '../platform/desktopControls.js';
 import { registerScreenshotCapture } from '../platform/screenshotCapture.js';
@@ -119,6 +120,7 @@ let mainWindow;
 let welcomeWindow;
 let bridge;
 let audioAnalysis;
+let memoryTrim;
 let updates;
 let systemMedia;
 let desktopControls;
@@ -470,7 +472,15 @@ async function createMainWindow() {
       devTools: allowDevTools,
       nodeIntegration: false,
       preload: runtimePaths.preloadPath,
-      sandbox: true
+      sandbox: true,
+      // Chromium's default throttling suspends rAF and CSS animations for an
+      // unfocused/occluded window -- expected for a typical page, but this
+      // one keeps playing audio and scrolling its now-playing title while
+      // the listener works in another app, which is the common case for a
+      // music player. Without this, the title marquee (and the player bar's
+      // own ambient glow animations) visibly freeze the instant the window
+      // loses focus.
+      backgroundThrottling: false
     }
   });
 
@@ -555,6 +565,8 @@ app.whenReady().then(async () => {
   // its first image; applying it later would leave the opening screen's artwork
   // going out through the proxy the listener asked Orchard to ignore.
   await registerNetworkPreferences({ app, ipcMain, session }).restore();
+  memoryTrim = registerMemoryTrim({ app, ipcMain, modulePath: runtimePaths.memoryTrimModulePath });
+  await memoryTrim.restore();
   // Innertube sessions (player fetch + session/PO-token generation) are created
   // lazily on first use, which otherwise means the very first "play" after
   // launch pays that cold-start cost and can exceed the renderer's music:track
@@ -657,6 +669,8 @@ app.on('before-quit', () => {
   // disk, and everything below it can afford to lose a few milliseconds.
   sessionState.flush();
   void audioAnalysis?.stop();
+  memoryTrim?.stop();
+  playbackService.stop();
   resetDiscordRpcClient();
   systemMedia?.stop();
   desktopControls?.stop();

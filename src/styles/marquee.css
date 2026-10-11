@@ -1,0 +1,80 @@
+/*
+ * Copyright (C) 2026 SFG545
+ *
+ * This file is part of Orchard.
+ *
+ * Orchard is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Affero General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ *
+ * Orchard is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Orchard. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/*
+ * Styling half of the now-playing title marquee; public/orchard-marquee.js is
+ * the other half. That script only ever adds the "orchard-marquee-host"
+ * class, a data-orchard-marquee-text attribute, and a
+ * --orchard-marquee-duration variable -- it never touches the element's real
+ * text node, so Vue keeps patching the title normally on track changes.
+ *
+ * The real text becomes invisible and a ::before pseudo-element (which reads
+ * the text back out of the data attribute) is what actually scrolls. That
+ * split is what lets the animation restart from the right edge on every
+ * track change without the element's layout box ever changing size.
+ *
+ * This animation only actually plays while the window has
+ * backgroundThrottling disabled (see electron/main/index.js) -- Chromium
+ * suspends CSS animations for an unfocused/occluded window otherwise, which
+ * reads as "the title never scrolls" even though every rule below is
+ * correct and applied.
+ */
+.orchard-marquee-host {
+  position: relative !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  display: inline-block !important;
+  vertical-align: middle;
+  visibility: hidden !important;
+}
+
+.fullscreen-player__track-copy .orchard-marquee-host {
+  max-width: 100% !important;
+}
+
+.orchard-marquee-host::before {
+  content: attr(data-orchard-marquee-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #fff;
+  white-space: nowrap;
+  visibility: visible !important;
+  animation-name: orchard-marquee-scroll;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-duration: var(--orchard-marquee-duration, 10s);
+}
+
+@keyframes orchard-marquee-scroll {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* No feature in this codebase sets data-performance-mode yet, so this is
+   forward-compatible dead weight today rather than a regression risk: if a
+   performance-mode toggle is ever added, the marquee already knows to defer
+   to it instead of needing another pass through this file. */
+html[data-performance-mode='true'] .orchard-marquee-host::before {
+  animation: none !important;
+}
