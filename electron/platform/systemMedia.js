@@ -28,7 +28,7 @@ const { SYSTEM_MEDIA } = IPC_CHANNELS;
 
 const DBUS_NAME = 'Tide';
 const DISPLAY_NAME = 'Tide';
-const DESKTOP_ENTRY = 'dev.sfg.orchard';
+const DESKTOP_ENTRY = 'dev.martinesq.tide';
 
 function loadAddon() {
   return require('../../native-media/index.cjs');

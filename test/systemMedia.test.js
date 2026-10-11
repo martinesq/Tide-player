@@ -90,8 +90,8 @@ test('state reaches the addon and the controls are constructed once', async () =
 
   assert.equal(addon.calls.states.length, 2);
   assert.equal(addon.calls.states[0].track.id, 'track-1');
-  assert.equal(addon.calls.options.dbusName, 'Orchard');
-  assert.equal(addon.calls.options.desktopEntry, 'dev.sfg.orchard');
+  assert.equal(addon.calls.options.dbusName, 'Tide');
+  assert.equal(addon.calls.options.desktopEntry, 'dev.martinesq.tide');
 });
 
 test('commands are flattened to the { type, value } shape the renderer switches on', async () => {
