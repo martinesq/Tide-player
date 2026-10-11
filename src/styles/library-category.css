@@ -86,6 +86,74 @@
   font-size: 11px;
 }
 
+/* Likes in list mode: adds a numbered index column and a duration column
+ * ahead of/after the existing art + text columns used by library-songs. */
+.search-shelf--likes-list .search-media-rail {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px 14px;
+}
+
+.search-shelf--likes-list .search-media-card {
+  grid-template-columns: 44px 56px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 3px 12px;
+  min-height: 68px;
+  padding: 6px;
+  text-align: left;
+  border-radius: 5px;
+}
+
+.search-shelf--likes-list .search-media-card:hover,
+.search-shelf--likes-list .search-media-card:focus-visible {
+  background: rgba(255, 255, 255, 0.035);
+  transform: none;
+}
+
+.search-shelf--likes-list .likes-index {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  padding-right: 4px;
+  color: #8c938d;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.search-shelf--likes-list .search-media-card__art,
+.search-shelf--likes-list .search-media-card__art--empty {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  width: 56px;
+  height: 56px;
+}
+
+.search-shelf--likes-list .search-media-card strong {
+  grid-column: 3;
+  grid-row: 1;
+  margin: 0;
+  font-size: 13px;
+  text-align: left;
+}
+
+.search-shelf--likes-list .search-media-card > span:last-child {
+  grid-column: 3;
+  grid-row: 2;
+  margin: 0;
+  font-size: 11px;
+  text-align: left;
+}
+
+.search-shelf--likes-list .likes-duration {
+  grid-column: 4;
+  grid-row: 1 / 3;
+  align-self: center;
+  padding-right: 6px;
+  color: #8c938d;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 720px) {
   .search-view--library .search-media-rail {
     grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));

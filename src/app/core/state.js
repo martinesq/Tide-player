@@ -55,6 +55,7 @@ import {
 import { VEIL_MIN_ALPHA } from '../appearance/immersiveVeil.js';
 import { SONG_CACHE_DEFAULTS, clampSongCacheMaxSizeMb } from '../playback/songCachePreferences.js';
 import { DEFAULT_QUEUE_LAYOUT, QUEUE_LAYOUT_OPTIONS, normalizeQueueLayout } from '../playback/queueLayout.js';
+import { DEFAULT_LIKES_LAYOUT, LIKES_LAYOUT_OPTIONS, normalizeLikesLayout } from '../browse/likesLayout.js';
 import {
   DEFAULT_SPONSOR_BLOCK_MODE,
   SPONSOR_BLOCK_MODE_OPTIONS,
@@ -76,6 +77,7 @@ export function installState(ctx) {
     customArtistPagesEnabled: true,
     playbackStatePersistenceEnabled: true,
     queueLayout: DEFAULT_QUEUE_LAYOUT,
+    likesLayout: DEFAULT_LIKES_LAYOUT,
     youtubeHistoryEnabled: true,
     discordRpcEnabled: true,
     immersiveBackgroundsEnabled: true,
@@ -89,6 +91,7 @@ export function installState(ctx) {
   };
   ctx.accentColorSourceOptions = ACCENT_COLOR_SOURCE_OPTIONS;
   ctx.queueLayoutOptions = QUEUE_LAYOUT_OPTIONS;
+  ctx.likesLayoutOptions = LIKES_LAYOUT_OPTIONS;
   ctx.sponsorBlockModeOptions = SPONSOR_BLOCK_MODE_OPTIONS;
   ctx.graphicsModeOptions = GRAPHICS_MODE_OPTIONS;
   ctx.immersiveBackgroundIntensityOptions = IMMERSIVE_BACKGROUND_INTENSITY_OPTIONS;
@@ -117,6 +120,7 @@ export function installState(ctx) {
         ? preferences.playbackStatePersistenceEnabled
         : ctx.DEFAULT_USER_PREFERENCES.playbackStatePersistenceEnabled,
       queueLayout: normalizeQueueLayout(preferences.queueLayout),
+      likesLayout: normalizeLikesLayout(preferences.likesLayout),
       youtubeHistoryEnabled: typeof preferences.youtubeHistoryEnabled === 'boolean'
         ? preferences.youtubeHistoryEnabled
         : ctx.DEFAULT_USER_PREFERENCES.youtubeHistoryEnabled,
@@ -396,6 +400,7 @@ export function installState(ctx) {
   ctx.customArtistPagesEnabled = ref(ctx.initialUserPreferences.customArtistPagesEnabled);
   ctx.playbackStatePersistenceEnabled = ref(ctx.initialUserPreferences.playbackStatePersistenceEnabled);
   ctx.queueLayout = ref(ctx.initialUserPreferences.queueLayout);
+  ctx.likesLayout = ref(ctx.initialUserPreferences.likesLayout);
   ctx.youtubeHistoryEnabled = ref(ctx.initialUserPreferences.youtubeHistoryEnabled);
   ctx.discordRpcEnabled = ref(ctx.initialUserPreferences.discordRpcEnabled);
   ctx.graphicsMode = ref(ctx.initialUserPreferences.graphicsMode);
@@ -440,6 +445,7 @@ export function installState(ctx) {
     ctx.customArtistPagesEnabled.value = defaults.customArtistPagesEnabled;
     ctx.playbackStatePersistenceEnabled.value = defaults.playbackStatePersistenceEnabled;
     ctx.queueLayout.value = defaults.queueLayout;
+    ctx.likesLayout.value = defaults.likesLayout;
     ctx.youtubeHistoryEnabled.value = defaults.youtubeHistoryEnabled;
     ctx.customAccentColor.value = defaults.customAccentColor;
     ctx.discordRpcEnabled.value = defaults.discordRpcEnabled;

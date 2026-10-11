@@ -239,7 +239,10 @@ export default {
         v-for="section in searchCategorySections"
         :key="section.key"
         class="shelf-section search-shelf"
-        :class="[`search-shelf--${section.key}`, { 'search-shelf--library': isLibraryCategory }]"
+        :class="[
+          `search-shelf--${section.key}`,
+          { 'search-shelf--library': isLibraryCategory, 'search-shelf--likes-list': section.key === 'library-likes' && likesLayout !== 'grid' }
+        ]"
       >
         <div v-if="!isLibraryCategory" class="section-header">
           <h2>{{ section.title }}</h2>
@@ -269,7 +272,7 @@ export default {
             <span>Song</span>
           </button>
           <button
-            v-for="item in isLibraryCategory ? libraryItems : sectionPreviewItems(section)"
+            v-for="(item, ix) in isLibraryCategory ? libraryItems : sectionPreviewItems(section)"
             :key="`${section.key}-${item.id || itemBrowseId(item) || item.title}`"
             type="button"
             class="search-media-card"
@@ -278,6 +281,7 @@ export default {
             @keydown="item.type !== 'event' && onSongActionKeydown($event, item)"
             @contextmenu="item.type !== 'event' && shareMediaSongLink(item, $event)"
           >
+            <span v-if="section.key === 'library-likes' && likesLayout !== 'grid'" class="likes-index">{{ ix + 1 }}</span>
             <q-img
               v-if="mediaThumbnail(item)"
               :src="mediaThumbnail(item)"
@@ -294,6 +298,7 @@ export default {
               <span class="explicit-title__text">{{ item.title }}</span>
               <ExplicitBadge :explicit="item.explicit" />
             </strong>
+            <span v-if="section.key === 'library-likes' && likesLayout !== 'grid'" class="likes-duration">{{ formatTime(item.durationSeconds) }}</span>
             <span>{{ itemMeta(item) }}</span>
           </button>
         </div>

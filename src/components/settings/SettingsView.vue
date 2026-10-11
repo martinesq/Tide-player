@@ -159,6 +159,26 @@ export default {
           </div>
         </div>
 
+        <div class="settings-row settings-row--options">
+          <div class="settings-row__copy">
+            <label id="settings-likes-layout-label">Likes layout</label>
+            <p>Show your Likes as a grid of covers or as a numbered list with durations. Applies to YouTube Music, SoundCloud and YT &amp; SC.</p>
+          </div>
+          <div class="settings-option-group" role="group" aria-labelledby="settings-likes-layout-label">
+            <button
+              v-for="option in likesLayoutOptions"
+              :key="option.value"
+              type="button"
+              class="settings-option"
+              :class="{ 'settings-option--active': likesLayout === option.value }"
+              :aria-pressed="likesLayout === option.value"
+              @click="likesLayout = option.value"
+            >
+              {{ option.label }}
+            </button>
+          </div>
+        </div>
+
         <div class="settings-row">
           <div class="settings-row__copy">
             <label for="settings-crossfade">Crossfade</label>

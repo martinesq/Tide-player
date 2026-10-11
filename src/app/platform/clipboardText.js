@@ -25,6 +25,12 @@ export async function copyTextToClipboard(value) {
   const text = String(value ?? '').trim();
   if (!text) return false;
 
+  const copied = await copyTextToClipboardInternal(text);
+  if (copied) window.orchardToast?.('Copied to clipboard');
+  return copied;
+}
+
+async function copyTextToClipboardInternal(text) {
   if (window.orchardClipboard?.writeText) {
     await window.orchardClipboard.writeText(text);
     return true;
